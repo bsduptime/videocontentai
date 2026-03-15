@@ -1,0 +1,31 @@
+[paths]
+working_dir = "~/.videngine/jobs"
+
+[whisper]
+model_path = "~/.videngine/models/ggml-large-v3-turbo.bin"
+language = "en"
+threads = 4
+
+[ai]
+model = "claude-opus-4-20250115"
+max_tokens = 8192
+temperature = 0.3
+target_total_duration = 300
+
+[voice]
+engine = "chatterbox"
+reference_audio = "assets/voice_refs/founder.m4a"
+
+[video]
+intro_template = "assets/intros/default.mp4"
+outro_template = "assets/outros/default.mp4"
+watermark = "assets/watermarks/logo.png"
+watermark_position = "bottom_right"
+watermark_opacity = 0.3
+watermark_scale = 0.08
+
+[encoding]
+codec = "libx264"
+crf = 20
+audio_codec = "aac"
+audio_bitrate = "192k"
