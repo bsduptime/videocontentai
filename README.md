@@ -22,7 +22,7 @@ Each stage checkpoints to `job_state.json`. If anything fails, `videngine resume
 
 ## Requirements
 
-- Python 3.11+ (3.14 not supported — PyTorch requires ≤3.13)
+- Python 3.10+ (3.14 not supported — PyTorch requires ≤3.13)
 - FFmpeg
 - [whisper.cpp](https://github.com/ggerganov/whisper.cpp) (`whisper-cli`) + `ggml-large-v3-turbo` model
 - ANTHROPIC_API_KEY environment variable
@@ -38,7 +38,7 @@ cd videocontentai
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create venv and install
-uv venv --python python3.11
+uv venv --python python3.10  # or python3.11
 source .venv/bin/activate
 uv pip install -e .
 
@@ -49,6 +49,19 @@ uv pip install chatterbox-tts
 mkdir -p ~/.videngine/models
 wget -O ~/.videngine/models/ggml-large-v3-turbo.bin \
   https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin
+```
+
+### Jetson Orin Setup
+
+```bash
+# One-shot setup script (handles Python version detection, deps, model download)
+./setup-jetson.sh
+
+# PyTorch must come from NVIDIA's Jetson index (PyPI wheels are CPU-only)
+uv pip install torch torchaudio --index-url https://pypi.jetson-ai-lab.io/jp6/cu126
+
+# PyTorch 2.8+ needs nvidia-cudss-cu12
+uv pip install nvidia-cudss-cu12
 ```
 
 ### Environment Variables
@@ -94,8 +107,8 @@ Drop these into `assets/`:
 | Asset | Path | Notes |
 |-------|------|-------|
 | Logo/watermark | `assets/watermarks/logo.png` | Transparent PNG |
-| Intro template | `assets/intros/default.mp4` | Branded intro animation (3-5s) |
-| Outro template | `assets/outros/default.mp4` | Branded outro with CTA space |
+| Intro template | `assets/intros/default-intro.mp4` | 1920x1920 square master, cropped per aspect ratio |
+| Outro template | `assets/outros/default-outro.mp4` | 1920x1920 square master, cropped per aspect ratio |
 | Voice reference | `assets/voice_refs/founder.m4a` | 10-30s of clear speech for voice cloning |
 
 ## Configuration

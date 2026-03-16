@@ -33,6 +33,23 @@ def _ensure_wav(audio_path: str, working_dir: str) -> str:
     return str(wav_path)
 
 
+def _patch_perth() -> None:
+    """Patch perth watermarker on platforms where the native ext is unavailable (aarch64)."""
+    try:
+        import perth
+        if perth.PerthImplicitWatermarker is None:
+            perth.PerthImplicitWatermarker = perth.DummyWatermarker
+    except ImportError:
+        pass
+
+
+def _save_wav(wav_tensor, sample_rate: int, path: str) -> None:
+    """Save a waveform tensor to WAV, with fallback for torchaudio >=2.10 (torchcodec)."""
+    import soundfile as sf
+    wav_np = wav_tensor.squeeze().cpu().numpy()
+    sf.write(path, wav_np, sample_rate)
+
+
 def run_voice(
     edit_decision: EditDecision,
     working_dir: str,
@@ -47,8 +64,9 @@ def run_voice(
     outro_path = work / "narration_outro.wav"
 
     try:
-        from chatterbox.tts import ChatterboxTTS
         import torch
+        _patch_perth()
+        from chatterbox.tts import ChatterboxTTS
     except ImportError:
         raise RuntimeError(
             "chatterbox-tts is not installed. Install with: pip install chatterbox-tts\n"
@@ -64,13 +82,11 @@ def run_voice(
     # Generate intro narration
     if edit_decision.intro_narration:
         wav = model.generate(edit_decision.intro_narration, audio_prompt_path=ref_audio)
-        import torchaudio
-        torchaudio.save(str(intro_path), wav, model.sr)
+        _save_wav(wav, model.sr, str(intro_path))
 
     # Generate outro narration
     if edit_decision.outro_narration:
         wav = model.generate(edit_decision.outro_narration, audio_prompt_path=ref_audio)
-        import torchaudio
-        torchaudio.save(str(outro_path), wav, model.sr)
+        _save_wav(wav, model.sr, str(outro_path))
 
     return str(intro_path), str(outro_path)

@@ -15,9 +15,10 @@ if ! command -v uv &>/dev/null; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
-# Create venv
-echo "Creating Python 3.11 venv..."
-uv venv --python python3.11
+# Create venv — use system Python (3.10+ on JetPack 6)
+PYTHON_BIN=$(command -v python3.11 || command -v python3.10 || command -v python3)
+echo "Creating venv with $PYTHON_BIN..."
+uv venv --python "$PYTHON_BIN"
 source .venv/bin/activate
 
 # Install videngine + voice cloning

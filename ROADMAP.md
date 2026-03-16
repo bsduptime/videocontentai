@@ -41,8 +41,10 @@ One long video → suite of platform-optimized clips at different lengths.
 
 ## Phase 4 — Assembly Polish
 
-- [ ] Intro/outro template layering with narration audio
-- [ ] Watermark overlay (position, opacity, scale from config)
+- [x] Intro/outro template layering (1920x1920 square masters cropped per aspect ratio)
+- [x] Watermark overlay (position, opacity, scale from config)
+- [x] Per-format watermark placement (bottom-right for 16:9/4:5, top-left+180px for 9:16)
+- [ ] Intro/outro narration audio layering
 - [ ] Per-segment portrait crop focus hints (center/left_third/right_third)
 - [ ] Crossfade transitions between segments
 - [ ] Rich progress bars for long FFmpeg operations
@@ -56,7 +58,12 @@ One long video → suite of platform-optimized clips at different lengths.
 
 ## Phase 6 — Jetson Optimization
 
-- [ ] `videngine setup` command (download models, verify deps, check CUDA)
+- [x] Jetson setup script (setup-jetson.sh) — Python version detection, deps, model download
+- [x] PyTorch CUDA on Jetson via NVIDIA wheel index (pypi.jetson-ai-lab.io)
+- [x] Chatterbox TTS aarch64 compatibility (perth watermarker patch, soundfile save)
+- [x] whisper.cpp static build with CUDA on ARM64
+- [x] Disk management — venv + models on SD card via symlinks
+- [ ] `videngine setup` command (interactive version of setup-jetson.sh)
 - [ ] NVENC hardware encoding (h264_nvenc instead of libx264)
 - [ ] GPU memory management for concurrent whisper + Chatterbox
 - [ ] Batch processing (multiple source videos queued)
