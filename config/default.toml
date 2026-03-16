@@ -19,8 +19,8 @@ reference_audio = "assets/voice_refs/founder.m4a"
 [video]
 # 1920x1920 masters — cropped to target aspect ratio during assembly
 # Variants: default-1s.mp4, default-2s.mp4, default-4s.mp4
-intro_template = "assets/intros/default.mp4"
-outro_template = "assets/outros/default.mp4"
+intro_template = "assets/intros/default-intro.mp4"
+outro_template = "assets/outros/default-outro.mp4"
 intro_format = "1920x1920"
 watermark = "assets/watermarks/logo.png"
 watermark_position = "bottom_right"
