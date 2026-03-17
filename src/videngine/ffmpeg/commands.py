@@ -6,6 +6,19 @@ from ..config import EncodingConfig
 from .filters import watermark_overlay
 
 
+def _video_encode_args(encoding: EncodingConfig) -> list[str]:
+    """Build video encoding args for either h264_nvmpi or libx264."""
+    if encoding.codec == "h264_nvmpi":
+        return ["-c:v", "h264_nvmpi"]
+    else:
+        return ["-c:v", encoding.codec, "-crf", str(encoding.crf)]
+
+
+def _audio_encode_args(encoding: EncodingConfig) -> list[str]:
+    """Build audio encoding args."""
+    return ["-c:a", encoding.audio_codec, "-b:a", encoding.audio_bitrate]
+
+
 def extract_audio(input_path: str, output_path: str) -> list[str]:
     """Extract audio as 16kHz mono WAV for whisper."""
     return [
@@ -25,12 +38,7 @@ def cut_segment(
     start: float,
     end: float,
 ) -> list[str]:
-    """Cut a segment from source using stream copy (no re-encoding).
-
-    Uses -ss before -i for fast seek, then -c copy for instant extraction.
-    Keyframe alignment means cuts may be slightly imprecise (within ~0.5s)
-    but avoids full re-encode.
-    """
+    """Cut a segment from source using stream copy (no re-encoding)."""
     return [
         "ffmpeg", "-y",
         "-ss", f"{start:.3f}",
@@ -47,10 +55,7 @@ def concat_segments(
     output_path: str,
     concat_list_path: str,
 ) -> tuple[str, list[str]]:
-    """Concatenate segments via concat demuxer with stream copy.
-
-    Returns (concat_list_content, ffmpeg_command).
-    """
+    """Concatenate segments via concat demuxer with stream copy."""
     lines = [f"file '{p}'" for p in segment_paths]
     concat_content = "\n".join(lines)
 
@@ -71,7 +76,7 @@ def scale_to_1080p(
     encoding: EncodingConfig,
     is_landscape: bool = True,
 ) -> list[str]:
-    """Scale to 1080p preserving aspect ratio. Requires re-encoding."""
+    """Scale to 1080p preserving aspect ratio. Re-encodes video and normalizes audio to stereo."""
     if is_landscape:
         vf = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black"
     else:
@@ -81,10 +86,9 @@ def scale_to_1080p(
         "ffmpeg", "-y",
         "-i", input_path,
         "-vf", vf,
-        "-c:v", encoding.codec,
-        "-crf", str(encoding.crf),
-        "-c:a", encoding.audio_codec,
-        "-b:a", encoding.audio_bitrate,
+        *_video_encode_args(encoding),
+        "-ac", "2",  # normalize to stereo
+        *_audio_encode_args(encoding),
         output_path,
     ]
 
@@ -98,14 +102,14 @@ def mix_background_music(
 ) -> list[str]:
     """Mix background music under the video's speech audio.
 
-    Music is looped to match video duration, faded in over 2s,
-    and mixed at the specified volume under the original audio.
+    Normalizes both streams to stereo before mixing to avoid channel mismatch.
     Video stream is copied, only audio is re-encoded.
     """
     filter_complex = (
+        f"[0:a]aformat=channel_layouts=stereo[speech];"
         f"[1:a]aloop=loop=-1:size=2e+09,afade=t=in:d=2,"
-        f"volume={music_volume}[music];"
-        f"[0:a][music]amix=inputs=2:duration=first:dropout_transition=2[aout]"
+        f"aformat=channel_layouts=stereo,volume={music_volume}[music];"
+        f"[speech][music]amix=inputs=2:duration=first:dropout_transition=2[aout]"
     )
 
     return [
@@ -116,8 +120,7 @@ def mix_background_music(
         "-map", "0:v",
         "-map", "[aout]",
         "-c:v", "copy",
-        "-c:a", encoding.audio_codec,
-        "-b:a", encoding.audio_bitrate,
+        *_audio_encode_args(encoding),
         output_path,
     ]
 
@@ -131,7 +134,7 @@ def apply_watermark(
     opacity: float = 0.3,
     scale: float = 0.08,
 ) -> list[str]:
-    """Apply watermark overlay to a video. Requires re-encoding video."""
+    """Apply watermark overlay to a video. Re-encodes video, copies audio."""
     filter_graph = watermark_overlay(position=position, opacity=opacity, scale=scale)
 
     return [
@@ -139,8 +142,7 @@ def apply_watermark(
         "-i", input_path,
         "-i", watermark_path,
         "-filter_complex", filter_graph,
-        "-c:v", encoding.codec,
-        "-crf", str(encoding.crf),
+        *_video_encode_args(encoding),
         "-c:a", "copy",
         output_path,
     ]
@@ -162,10 +164,8 @@ def scale_and_pad(
         "ffmpeg", "-y",
         "-i", input_path,
         "-vf", vf,
-        "-c:v", encoding.codec,
-        "-crf", str(encoding.crf),
-        "-c:a", encoding.audio_codec,
-        "-b:a", encoding.audio_bitrate,
+        *_video_encode_args(encoding),
+        *_audio_encode_args(encoding),
         output_path,
     ]
 
@@ -186,9 +186,7 @@ def center_crop(
         "ffmpeg", "-y",
         "-i", input_path,
         "-vf", vf,
-        "-c:v", encoding.codec,
-        "-crf", str(encoding.crf),
-        "-c:a", encoding.audio_codec,
-        "-b:a", encoding.audio_bitrate,
+        *_video_encode_args(encoding),
+        *_audio_encode_args(encoding),
         output_path,
     ]

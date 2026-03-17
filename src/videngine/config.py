@@ -55,8 +55,8 @@ class VideoConfig:
 
 @dataclass
 class EncodingConfig:
-    codec: str = "libx264"
-    crf: int = 20
+    codec: str = "h264_nvmpi"
+    crf: int = 20  # only used by libx264 fallback
     audio_codec: str = "aac"
     audio_bitrate: str = "192k"
 
