@@ -1,0 +1,58 @@
+{
+  "pipeline": "dbexpertai-brand-landscape",
+  "branding": {
+    "intro_16x9": "assets/intros/dbexpert-intro-16x9.mp4",
+    "intro_9x16": "assets/intros/dbexpert-intro-9x16.mp4",
+    "outro_16x9": "assets/outros/dbexpert-outro-16x9.mp4",
+    "outro_9x16": "assets/outros/dbexpert-outro-9x16.mp4",
+    "watermark": "assets/watermarks/dbexpertai-watermark.png"
+  },
+  "source": {
+    "format": "screen recording with narration, tutorial or deep dive",
+    "aspect_ratio": "16:9",
+    "duration_range": [600, 2700],
+    "tone": "Educational, precise, authoritative. Teaching and proving — show the problem, deliver the solution, demonstrate the result."
+  },
+  "cuts": [
+    {
+      "name": "hook",
+      "min_duration": 7,
+      "max_duration": 15,
+      "is_hook": true,
+      "mood": "intense",
+      "channels": ["YouTube Video"],
+      "motion": "Stories / Opinion",
+      "editorial_lens": "Extract the single most surprising or provocative moment — a stat, a failure, a hot take. Must hook in the first frame."
+    },
+    {
+      "name": "highlight",
+      "min_duration": 30,
+      "max_duration": 60,
+      "prepend_hook": true,
+      "mood": "punchy",
+      "channels": ["LinkedIn Post", "YouTube Video", "X Post"],
+      "motion": "Stories / Proof / Teaching",
+      "editorial_lens": "Post-mortems, benchmarks, architecture decisions, tech demos, incident threads, TIL clips. Pick the single strongest result, before/after, or incident moment."
+    },
+    {
+      "name": "focused_tutorial",
+      "min_duration": 600,
+      "max_duration": 900,
+      "prepend_hook": true,
+      "mood": "focus",
+      "channels": ["YouTube Video"],
+      "motion": "Teaching",
+      "editorial_lens": "Focused tutorial hitting the watch-time sweet spot. Clear structure: problem statement, walkthrough, result. Trim tangents aggressively."
+    },
+    {
+      "name": "deep_dive",
+      "min_duration": 1200,
+      "max_duration": 2700,
+      "prepend_hook": true,
+      "mood": "focus",
+      "channels": ["YouTube Video"],
+      "motion": "Proof / Teaching",
+      "editorial_lens": "Deep dives, conference talks, committed audience. Preserve the full argument but cut dead air, repetition, and off-topic tangents."
+    }
+  ]
+}

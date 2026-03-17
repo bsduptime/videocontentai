@@ -10,15 +10,67 @@ from pathlib import Path
 from rich.console import Console
 
 from .config import Config
+from .ffmpeg.probe import probe
 from .models import (
-    EditDecision,
+    Branding,
+    CutPlan,
+    CutSpec,
+    CutSpecFile,
     JobState,
+    SourceContext,
     StageResult,
     StageStatus,
     Transcript,
 )
 
 console = Console()
+
+_BUNDLED_SPECS_DIR = Path(__file__).resolve().parent.parent.parent / "config" / "cut_specs"
+
+
+def load_spec_file(path: str | Path) -> CutSpecFile:
+    """Load a cut spec file (pipeline + source + cuts)."""
+    return CutSpecFile.model_validate_json(Path(path).read_text())
+
+
+def detect_spec_file(source_file: str) -> CutSpecFile:
+    """Auto-detect source aspect ratio, list matching spec files, pick the first.
+
+    If multiple files match, prints them so the user knows to use --specs.
+    """
+    info = probe(source_file)
+    is_landscape = info.width >= info.height
+    aspect = "16:9" if is_landscape else "9:16"
+
+    search_dirs = [Path("config/cut_specs"), _BUNDLED_SPECS_DIR]
+    matches: list[tuple[Path, CutSpecFile]] = []
+
+    for d in search_dirs:
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.json")):
+            try:
+                spec = load_spec_file(f)
+                if spec.source.aspect_ratio == aspect:
+                    matches.append((f, spec))
+            except Exception:
+                continue
+
+    if not matches:
+        raise FileNotFoundError(
+            f"No spec files found for {aspect} source. "
+            f"Provide --specs explicitly."
+        )
+
+    if len(matches) > 1:
+        console.print(f"\n[yellow]Multiple spec files match {aspect} source:[/yellow]")
+        for f, spec in matches:
+            console.print(f"  {f}  ({spec.pipeline})")
+        console.print(f"[yellow]Using first match. Override with --specs.[/yellow]\n")
+
+    chosen_path, chosen_spec = matches[0]
+    console.print(f"  [dim]Auto-detected {aspect} → {chosen_path} ({chosen_spec.pipeline})[/dim]")
+    return chosen_spec
 
 
 class Pipeline:
@@ -27,18 +79,15 @@ class Pipeline:
         source_file: str,
         config: Config,
         project: str = "",
-        target_duration: float | None = None,
-        ratios: list[str] | None = None,
+        specs_file: str | None = None,
         no_voice: bool = False,
         review: bool = False,
         dry_run: bool = False,
         job_id: str | None = None,
     ) -> None:
-        self.source_file = str(Path(source_file).resolve())
+        self.source_file = str(Path(source_file).resolve()) if source_file else ""
         self.config = config
         self.project = project
-        self.target_duration = target_duration or config.ai.target_total_duration
-        self.ratios = ratios or ["16x9"]
         self.no_voice = no_voice
         self.review = review
         self.dry_run = dry_run
@@ -48,8 +97,26 @@ class Pipeline:
             self.job = JobState.load(
                 str(Path(config.paths.working_dir) / job_id)
             )
+            self.spec_file = self.job.spec_file
+            self.no_voice = self.job.no_voice
         else:
+            if specs_file:
+                self.spec_file = load_spec_file(specs_file)
+            else:
+                self.spec_file = detect_spec_file(self.source_file)
             self.job = self._create_job()
+
+    @property
+    def cut_specs(self) -> list[CutSpec]:
+        return self.spec_file.cuts
+
+    @property
+    def source_context(self) -> SourceContext:
+        return self.spec_file.source
+
+    @property
+    def branding(self) -> Branding:
+        return self.spec_file.branding
 
     def _create_job(self) -> JobState:
         job_id = f"{self.project or 'job'}-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
@@ -61,8 +128,7 @@ class Pipeline:
             source_file=self.source_file,
             working_dir=str(working_dir),
             project=self.project,
-            target_duration=self.target_duration,
-            ratios=self.ratios,
+            spec_file=self.spec_file,
             no_voice=self.no_voice,
         )
         job.save()
@@ -71,8 +137,10 @@ class Pipeline:
     def run(self) -> JobState:
         """Run all pipeline stages, skipping completed ones."""
         console.print(f"\n[bold]Job:[/bold] {self.job.job_id}")
+        console.print(f"[bold]Pipeline:[/bold] {self.spec_file.pipeline}")
         console.print(f"[bold]Source:[/bold] {self.job.source_file}")
-        console.print(f"[bold]Working dir:[/bold] {self.job.working_dir}\n")
+        console.print(f"[bold]Working dir:[/bold] {self.job.working_dir}")
+        console.print(f"[bold]Cuts:[/bold] {', '.join(f'{s.name} ({s.min_duration:.0f}-{s.max_duration:.0f}s)' for s in self.cut_specs)}\n")
 
         try:
             self._run_stage("transcribe", self._stage_transcribe)
@@ -81,13 +149,10 @@ class Pipeline:
             if self.review:
                 self._review_pause()
 
-            if not self.no_voice:
-                self._run_stage("voice", self._stage_voice)
-            else:
-                self._skip_stage("voice")
-
-            self._run_stage("assemble", self._stage_assemble)
-            self._run_stage("render", self._stage_render)
+            self._run_stage("cut", self._stage_cut)
+            self._run_stage("watermark", self._stage_watermark)
+            self._run_stage("intro_outro", self._stage_intro_outro)
+            self._run_stage("hook_prepend", self._stage_hook_prepend)
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Interrupted. Resume with:[/yellow]")
@@ -95,9 +160,9 @@ class Pipeline:
             raise SystemExit(1)
 
         console.print("\n[bold green]Pipeline complete![/bold green]")
-        outputs = self.job.stages.get("render", StageResult()).artifacts
-        for ratio, path in outputs.items():
-            console.print(f"  {ratio}: {path}")
+        outputs = self.job.stages.get("hook_prepend", StageResult()).artifacts
+        for spec_name, path in outputs.items():
+            console.print(f"  {spec_name}: {path}")
 
         return self.job
 
@@ -139,11 +204,13 @@ class Pipeline:
         console.print(f"  [dim]Stage {name}: skipped[/dim]")
 
     def _review_pause(self) -> None:
-        """Pause for user to review edit decision before proceeding."""
-        decision_path = Path(self.job.working_dir) / "edit_decision.json"
-        if decision_path.exists():
-            console.print(f"\n[yellow]Review edit decision at:[/yellow]")
-            console.print(f"  {decision_path}")
+        """Pause for user to review cut plans before proceeding."""
+        plans_dir = Path(self.job.working_dir) / "cut_plans"
+        if plans_dir.exists():
+            console.print(f"\n[yellow]Review cut plans at:[/yellow]")
+            console.print(f"  {plans_dir}")
+            for f in sorted(plans_dir.glob("*.json")):
+                console.print(f"    {f.name}")
             console.print("[yellow]Press Enter to continue or Ctrl+C to abort...[/yellow]")
             input()
 
@@ -152,7 +219,7 @@ class Pipeline:
     def _stage_transcribe(self) -> None:
         from .stages.transcribe import run_transcribe
 
-        transcript = run_transcribe(
+        run_transcribe(
             self.job.source_file, self.job.working_dir, self.config
         )
         self.job.stages["transcribe"].artifacts = {
@@ -164,62 +231,61 @@ class Pipeline:
         from .stages.analyze import run_analyze
 
         transcript = self._load_transcript()
-        edit_decision = run_analyze(
-            transcript, self.job.working_dir, self.config, self.target_duration
+        cut_plans = run_analyze(
+            transcript, self.job.working_dir, self.config,
+            self.cut_specs, self.source_context,
         )
-        self.job.stages["analyze"].artifacts = {
-            "edit_decision": "edit_decision.json",
+        artifacts = {"_analysis": "cut_plans/_analysis.json"}
+        for plan in cut_plans:
+            artifacts[plan.spec_name] = f"cut_plans/{plan.spec_name}.json"
+        self.job.stages["analyze"].artifacts = artifacts
+
+    def _stage_cut(self) -> None:
+        from .stages.cut import run_cut
+
+        cut_plans = self._load_cut_plans()
+        clip_paths = run_cut(
+            cut_plans, self.job.source_file, self.job.working_dir, self.config,
+            cut_specs=self.cut_specs,
+        )
+        self.job.stages["cut"].artifacts = {
+            name: f"clips/{name}/raw.mp4" for name in clip_paths
         }
 
-    def _stage_voice(self) -> None:
-        from .stages.voice import run_voice
+    def _stage_watermark(self) -> None:
+        from .stages.watermark import run_watermark
 
-        edit_decision = self._load_edit_decision()
-        intro_path, outro_path = run_voice(
-            edit_decision, self.job.working_dir, self.config
+        clip_paths = self._get_clip_paths("cut", "raw.mp4")
+        watermarked = run_watermark(
+            clip_paths, self.job.working_dir, self.config, branding=self.branding,
         )
-        self.job.stages["voice"].artifacts = {
-            "narration_intro": "narration_intro.wav",
-            "narration_outro": "narration_outro.wav",
+        self.job.stages["watermark"].artifacts = {
+            name: f"clips/{name}/watermarked.mp4" for name in watermarked
         }
 
-    def _stage_assemble(self) -> None:
-        from .stages.assemble import run_assemble
+    def _stage_intro_outro(self) -> None:
+        from .stages.intro_outro import run_intro_outro
 
-        edit_decision = self._load_edit_decision()
-
-        # Get voice artifacts if available
-        voice_stage = self.job.stages.get("voice", StageResult())
-        intro_wav = None
-        outro_wav = None
-        if voice_stage.status == StageStatus.COMPLETED:
-            work = Path(self.job.working_dir)
-            intro_wav = str(work / "narration_intro.wav")
-            outro_wav = str(work / "narration_outro.wav")
-
-        assembled = run_assemble(
-            edit_decision,
-            self.job.source_file,
-            self.job.working_dir,
-            self.config,
-            intro_wav=intro_wav,
-            outro_wav=outro_wav,
+        clip_paths = self._get_clip_paths("watermark", "watermarked.mp4")
+        cut_plans = self._load_cut_plans()
+        result = run_intro_outro(
+            clip_paths, cut_plans, self.job.working_dir, self.config,
+            self.no_voice, branding=self.branding,
         )
-        self.job.stages["assemble"].artifacts = {
-            "assembled": "assembled_16x9.mp4",
+        self.job.stages["intro_outro"].artifacts = {
+            name: f"clips/{name}/with_intro_outro.mp4" for name in result
         }
 
-    def _stage_render(self) -> None:
-        from .stages.render import run_render
+    def _stage_hook_prepend(self) -> None:
+        from .stages.hook_prepend import run_hook_prepend
 
-        assembled_path = str(
-            Path(self.job.working_dir) / "assembled_16x9.mp4"
+        clip_paths = self._get_clip_paths("intro_outro", "with_intro_outro.mp4")
+        result = run_hook_prepend(
+            clip_paths, self.job.working_dir, self.config,
+            cut_specs=self.cut_specs,
         )
-        outputs = run_render(
-            assembled_path, self.job.working_dir, self.config, self.ratios
-        )
-        self.job.stages["render"].artifacts = {
-            ratio: f"final_{ratio}.mp4" for ratio in outputs
+        self.job.stages["hook_prepend"].artifacts = {
+            name: f"clips/{name}/final.mp4" for name in result
         }
 
     # --- Helpers ---
@@ -228,6 +294,21 @@ class Pipeline:
         path = Path(self.job.working_dir) / "transcript.json"
         return Transcript.model_validate_json(path.read_text())
 
-    def _load_edit_decision(self) -> EditDecision:
-        path = Path(self.job.working_dir) / "edit_decision.json"
-        return EditDecision.model_validate_json(path.read_text())
+    def _load_cut_plans(self) -> list[CutPlan]:
+        """Load all cut plans from the cut_plans/ directory."""
+        plans_dir = Path(self.job.working_dir) / "cut_plans"
+        plans = []
+        for spec in self.cut_specs:
+            plan_path = plans_dir / f"{spec.name}.json"
+            if plan_path.exists():
+                plans.append(CutPlan.model_validate_json(plan_path.read_text()))
+        return plans
+
+    def _get_clip_paths(self, stage_name: str, filename: str) -> dict[str, str]:
+        """Build clip paths from a stage's artifacts."""
+        work = Path(self.job.working_dir)
+        artifacts = self.job.stages[stage_name].artifacts
+        return {
+            name: str(work / f"clips/{name}/{filename}")
+            for name in artifacts
+        }

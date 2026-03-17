@@ -35,7 +35,82 @@ class Transcript(BaseModel):
     segments: list[TranscriptSegment]
 
 
-# --- EditDecision (Stage 2 → Stages 3+4) ---
+# --- Cut Spec File (pipeline input) ---
+
+
+class SourceContext(BaseModel):
+    """Describes the source video format and tone — passed to the AI for context."""
+    format: str = ""  # "screen recording with narration", "talking-head, iPhone vertical"
+    aspect_ratio: str = ""  # "16:9", "9:16"
+    duration_range: list[float] = Field(default_factory=list)  # [min, max] expected source length
+    tone: str = ""  # editorial tone guidance for the AI
+
+
+class CutSpec(BaseModel):
+    name: str  # "hook", "tip", "highlight", "deep_dive"
+    min_duration: float  # seconds
+    max_duration: float  # seconds
+    channels: list[str] = Field(default_factory=list)  # target platforms
+    motion: str = ""  # "Teaching", "Stories / Proof", etc.
+    content_angle: str = ""  # optional per-run override: "focus on the AI demo"
+    editorial_lens: str = ""  # cutting guidance for the AI
+    is_hook: bool = False  # True for the 7-15s hook spec
+    prepend_hook: bool = False  # True = prepend the hook clip to this cut
+    mood: str = ""  # references a mood name from moods.json
+
+
+class Mood(BaseModel):
+    """A music mood from moods.json — maps to an audio file at assets/music/{name}.mp3."""
+    name: str
+    duration: int  # seconds — length of the source track
+    used_by: list[str] = Field(default_factory=list)
+    description: str = ""
+    generation_prompt: str = ""  # for future AI music generation
+
+
+class MoodsConfig(BaseModel):
+    """Top-level structure of moods.json."""
+    moods: list[Mood] = Field(default_factory=list)
+
+
+class Branding(BaseModel):
+    """Per-pipeline branding assets — intro/outro templates and watermark."""
+    intro_16x9: str = ""
+    intro_9x16: str = ""
+    outro_16x9: str = ""
+    outro_9x16: str = ""
+    watermark: str = ""
+
+
+class CutSpecFile(BaseModel):
+    """Top-level structure of a cut spec JSON file."""
+    pipeline: str = ""  # "dbexpertai-brand-portrait", "founder-personal-landscape"
+    branding: Branding = Field(default_factory=Branding)
+    source: SourceContext = Field(default_factory=SourceContext)
+    cuts: list[CutSpec] = Field(default_factory=list)
+
+
+# --- Analysis (Stage 2 output, phase 1) ---
+
+
+class ScoredSegment(BaseModel):
+    segment_id: int
+    start: float
+    end: float
+    text: str
+    score: int  # 1-10
+    tags: list[str]  # "strong_hook", "high_density", "emotional"
+    topic: str
+    summary: str
+
+
+class TranscriptAnalysis(BaseModel):
+    scored_segments: list[ScoredSegment]
+    overall_themes: list[str]
+    recommended_hook_ids: list[int]
+
+
+# --- Cut Plans (Stage 2 output, phase 2) ---
 
 
 class FocusHint(str, Enum):
@@ -54,15 +129,26 @@ class SelectedSegment(BaseModel):
     focus_hint: FocusHint = FocusHint.CENTER
 
 
-class EditDecision(BaseModel):
-    title: str
-    description: str
+class DroppedSegment(BaseModel):
+    segment_ids: list[int]
+    start: float
+    end: float
+    text: str
+    drop_reason: str
+
+
+class CutPlan(BaseModel):
+    spec_name: str
     segments: list[SelectedSegment]
+    dropped_segments: list[DroppedSegment]
+    full_text: str
+    edit_rationale: str
     intro_narration: str
     outro_narration: str
-    total_estimated_duration: float
-    edit_rationale: str
+    title: str
+    description: str
     hashtags: list[str]
+    total_estimated_duration: float
 
 
 # --- JobState (Resumability) ---
@@ -84,7 +170,7 @@ class StageResult(BaseModel):
     artifacts: dict[str, str] = Field(default_factory=dict)  # name → relative path
 
 
-STAGE_NAMES = ["transcribe", "analyze", "voice", "assemble", "render"]
+STAGE_NAMES = ["transcribe", "analyze", "cut", "watermark", "intro_outro", "hook_prepend"]
 
 
 class JobState(BaseModel):
@@ -93,8 +179,7 @@ class JobState(BaseModel):
     working_dir: str
     project: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    target_duration: float = 300.0
-    ratios: list[str] = Field(default_factory=lambda: ["16x9"])
+    spec_file: CutSpecFile = Field(default_factory=CutSpecFile)
     no_voice: bool = False
     stages: dict[str, StageResult] = Field(default_factory=dict)
 

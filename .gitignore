@@ -5,3 +5,17 @@ dist/
 build/
 *.pyc
 .env
+
+# Source video files (large)
+source/to_cut/**/*.mov
+source/to_cut/**/*.mp4
+source/in_progress/
+source/done/
+
+# Music assets (tracked via LFS or manually)
+assets/music/intense-v2.wav
+
+# Python
+.venv/
+__pycache__/
+*.pyc

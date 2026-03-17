@@ -1,0 +1,43 @@
+{
+  "pipeline": "founder-personal-landscape",
+  "branding": {
+    "intro_16x9": "",
+    "intro_9x16": "",
+    "outro_16x9": "",
+    "outro_9x16": "",
+    "watermark": ""
+  },
+  "source": {
+    "format": "talking-head, camera or iPhone horizontal, single take",
+    "aspect_ratio": "16:9",
+    "duration_range": [120, 180],
+    "tone": "Opinionated, raw, personal. Not a tutorial — a person sharing what they think, built, or learned."
+  },
+  "cuts": [
+    {
+      "name": "hook",
+      "min_duration": 7,
+      "max_duration": 15,
+      "is_hook": true,
+      "mood": "intense",
+      "channels": ["Instagram Reel"],
+      "editorial_lens": "The boldest single moment. Must land in the first frame. Pattern interrupt or provocative claim — a stat, a failure, a hot take."
+    },
+    {
+      "name": "core",
+      "min_duration": 15,
+      "max_duration": 30,
+      "mood": "punchy",
+      "channels": ["X Post"],
+      "editorial_lens": "One complete thought — an opinion, a tip, a lesson. No preamble. Tightest version of the take. Works as a standalone clip in a tweet."
+    },
+    {
+      "name": "segment",
+      "min_duration": 30,
+      "max_duration": 60,
+      "mood": "warm",
+      "channels": ["LinkedIn Post", "X Post"],
+      "editorial_lens": "A single complete thought with enough context to stand alone. LinkedIn rewards narrative arc; X rewards strong opinions."
+    }
+  ]
+}

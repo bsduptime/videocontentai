@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..config import EncodingConfig
+from .filters import watermark_overlay
 
 
 def extract_audio(input_path: str, output_path: str) -> list[str]:
@@ -23,18 +24,20 @@ def cut_segment(
     output_path: str,
     start: float,
     end: float,
-    encoding: EncodingConfig,
 ) -> list[str]:
-    """Cut a segment from the source video with re-encoding for frame accuracy."""
+    """Cut a segment from source using stream copy (no re-encoding).
+
+    Uses -ss before -i for fast seek, then -c copy for instant extraction.
+    Keyframe alignment means cuts may be slightly imprecise (within ~0.5s)
+    but avoids full re-encode.
+    """
     return [
         "ffmpeg", "-y",
-        "-i", input_path,
         "-ss", f"{start:.3f}",
-        "-to", f"{end:.3f}",
-        "-c:v", encoding.codec,
-        "-crf", str(encoding.crf),
-        "-c:a", encoding.audio_codec,
-        "-b:a", encoding.audio_bitrate,
+        "-i", input_path,
+        "-to", f"{end - start:.3f}",
+        "-c", "copy",
+        "-avoid_negative_ts", "make_zero",
         output_path,
     ]
 
@@ -43,13 +46,11 @@ def concat_segments(
     segment_paths: list[str],
     output_path: str,
     concat_list_path: str,
-    encoding: EncodingConfig,
 ) -> tuple[str, list[str]]:
-    """Concatenate segments via concat demuxer.
+    """Concatenate segments via concat demuxer with stream copy.
 
     Returns (concat_list_content, ffmpeg_command).
     """
-    # Build concat list file content
     lines = [f"file '{p}'" for p in segment_paths]
     concat_content = "\n".join(lines)
 
@@ -58,13 +59,91 @@ def concat_segments(
         "-f", "concat",
         "-safe", "0",
         "-i", concat_list_path,
+        "-c", "copy",
+        output_path,
+    ]
+    return concat_content, cmd
+
+
+def scale_to_1080p(
+    input_path: str,
+    output_path: str,
+    encoding: EncodingConfig,
+    is_landscape: bool = True,
+) -> list[str]:
+    """Scale to 1080p preserving aspect ratio. Requires re-encoding."""
+    if is_landscape:
+        vf = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black"
+    else:
+        vf = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black"
+
+    return [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-vf", vf,
         "-c:v", encoding.codec,
         "-crf", str(encoding.crf),
         "-c:a", encoding.audio_codec,
         "-b:a", encoding.audio_bitrate,
         output_path,
     ]
-    return concat_content, cmd
+
+
+def mix_background_music(
+    input_path: str,
+    music_path: str,
+    output_path: str,
+    encoding: EncodingConfig,
+    music_volume: float = 0.10,
+) -> list[str]:
+    """Mix background music under the video's speech audio.
+
+    Music is looped to match video duration, faded in over 2s,
+    and mixed at the specified volume under the original audio.
+    Video stream is copied, only audio is re-encoded.
+    """
+    filter_complex = (
+        f"[1:a]aloop=loop=-1:size=2e+09,afade=t=in:d=2,"
+        f"volume={music_volume}[music];"
+        f"[0:a][music]amix=inputs=2:duration=first:dropout_transition=2[aout]"
+    )
+
+    return [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-i", music_path,
+        "-filter_complex", filter_complex,
+        "-map", "0:v",
+        "-map", "[aout]",
+        "-c:v", "copy",
+        "-c:a", encoding.audio_codec,
+        "-b:a", encoding.audio_bitrate,
+        output_path,
+    ]
+
+
+def apply_watermark(
+    input_path: str,
+    watermark_path: str,
+    output_path: str,
+    encoding: EncodingConfig,
+    position: str = "bottom_right",
+    opacity: float = 0.3,
+    scale: float = 0.08,
+) -> list[str]:
+    """Apply watermark overlay to a video. Requires re-encoding video."""
+    filter_graph = watermark_overlay(position=position, opacity=opacity, scale=scale)
+
+    return [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-i", watermark_path,
+        "-filter_complex", filter_graph,
+        "-c:v", encoding.codec,
+        "-crf", str(encoding.crf),
+        "-c:a", "copy",
+        output_path,
+    ]
 
 
 def scale_and_pad(

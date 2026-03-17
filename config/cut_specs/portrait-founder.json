@@ -1,0 +1,52 @@
+{
+  "pipeline": "founder-personal-portrait",
+  "branding": {
+    "intro_16x9": "",
+    "intro_9x16": "",
+    "outro_16x9": "",
+    "outro_9x16": "",
+    "watermark": ""
+  },
+  "source": {
+    "format": "talking-head, iPhone vertical, single take",
+    "aspect_ratio": "9:16",
+    "duration_range": [120, 180],
+    "tone": "Opinionated, raw, personal. Not a tutorial — a person sharing what they think, built, or learned."
+  },
+  "cuts": [
+    {
+      "name": "hook",
+      "min_duration": 7,
+      "max_duration": 15,
+      "is_hook": true,
+      "mood": "intense",
+      "channels": ["Instagram Reel"],
+      "editorial_lens": "The boldest single moment. Must land in the first frame. Pattern interrupt or provocative claim — a stat, a failure, a hot take."
+    },
+    {
+      "name": "core",
+      "min_duration": 15,
+      "max_duration": 30,
+      "mood": "punchy",
+      "channels": ["Instagram Reel", "YouTube Short", "Facebook Reel"],
+      "editorial_lens": "One complete thought — an opinion, a tip, a lesson. No preamble. Must stand alone without context."
+    },
+    {
+      "name": "segment",
+      "min_duration": 30,
+      "max_duration": 60,
+      "mood": "warm",
+      "channels": ["Instagram Story", "Facebook Reel", "Facebook Story"],
+      "editorial_lens": "A single complete thought with enough context to stand alone. Story-slide energy — what happened and why it matters."
+    },
+    {
+      "name": "arc",
+      "min_duration": 50,
+      "max_duration": 90,
+      "prepend_hook": true,
+      "mood": "building",
+      "channels": ["Instagram Reel", "YouTube Short", "TikTok Video", "Facebook Reel"],
+      "editorial_lens": "Fuller narrative with context, tension, and payoff. Structure: setup → tension/surprise → insight → takeaway. Hook prepended to survive drop-off."
+    }
+  ]
+}

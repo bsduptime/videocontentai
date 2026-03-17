@@ -2,64 +2,168 @@
 
 from __future__ import annotations
 
-SYSTEM_PROMPT = """\
+import json
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..models import SourceContext
+
+# --- Phase 1: Transcript Analysis ---
+
+ANALYSIS_SYSTEM_PROMPT = """\
 You are an expert video editor and content strategist for a tech founder's social media presence.
 
-Your job: Given a transcript with word-level timestamps, select the best segments to create a compelling, concise video. You will also write short intro and outro narration scripts that will be voice-cloned in the founder's voice.
+Your job: Given a transcript with word-level timestamps, analyze and score EVERY segment on editorial criteria. This scoring will be used downstream to select segments for multiple content formats (hooks, reels, YouTube videos, etc.).
 
-## Editorial Criteria (in order of importance)
+## Scoring Criteria (1-10 scale)
 
-1. **Hook Quality** — The first segment MUST grab attention in the first 3 seconds. Lead with something surprising, contrarian, or emotionally charged.
+- **10**: Extraordinary — surprising insight, perfect delivery, must-include
+- **8-9**: Excellent — strong hook potential, high information density, emotional resonance
+- **6-7**: Good — solid content, clear point, decent delivery
+- **4-5**: Average — usable but not compelling, could be filler
+- **2-3**: Weak — vague, repetitive, or low energy
+- **1**: Cut — off-topic, stumbling, dead air, or pure filler
 
-2. **Content Density** — Every segment must deliver a clear, specific point. Cut anything vague, repetitive, or low-information.
+## Tagging
 
-3. **Emotional Resonance** — Prioritize moments with genuine passion, humor, surprise, or vulnerability. Flat delivery = cut.
+Tag each segment with ALL that apply:
+- `strong_hook` — grabs attention in the first 3 seconds, surprising or contrarian
+- `high_density` — packed with specific, actionable information
+- `emotional` — genuine passion, vulnerability, humor, or surprise
+- `funny` — genuinely entertaining moment
+- `contrarian` — challenges conventional wisdom
+- `technical` — deep technical explanation
+- `story` — narrative or anecdote
+- `filler` — low-content, repetitive, or transitional
+- `repetitive` — restates something already covered
 
-4. **Topic Coherence** — The selected segments must tell a logical story. Group by topic, build a narrative arc.
+## Theme Identification
 
-5. **Pacing** — Alternate energy levels. Don't stack 5 high-energy segments in a row. Give the viewer breathing room.
+Identify 3-5 major themes that run through the transcript. These help with content grouping.
 
-6. **Completeness** — Never cut mid-sentence or mid-thought. Each segment must be self-contained and coherent.
+## Hook Recommendations
 
-## Cut Point Rules
+Flag segment IDs that would make strong opening hooks — attention-grabbing, surprising, or emotionally charged moments that work in the first 3 seconds.
+"""
 
+
+def build_analysis_user_prompt(
+    transcript_text: str,
+    source_context: SourceContext | None = None,
+) -> str:
+    """Build the user prompt for transcript analysis."""
+    source_block = ""
+    if source_context and (source_context.format or source_context.tone):
+        parts = []
+        if source_context.format:
+            parts.append(f"- Source format: {source_context.format}")
+        if source_context.tone:
+            parts.append(f"- Tone: {source_context.tone}")
+        if source_context.aspect_ratio:
+            parts.append(f"- Aspect ratio: {source_context.aspect_ratio}")
+        source_block = "\nSource context:\n" + "\n".join(parts) + "\n"
+
+    return f"""\
+Analyze every segment in this transcript. Score each 1-10, tag them, identify themes, and recommend hook candidates.
+{source_block}
+<transcript>
+{transcript_text}
+</transcript>
+
+Use the analyze_transcript tool to return your analysis. Score EVERY segment — do not skip any.
+"""
+
+
+# --- Phase 2: Cut Plan Selection ---
+
+SELECTION_SYSTEM_PROMPT = """\
+You are an expert video editor creating a specific content cut from pre-scored transcript segments.
+
+You will receive:
+1. A scored analysis of all transcript segments (with scores, tags, topics)
+2. A cut spec defining the target format (duration range, channels, editorial lens)
+3. Source context describing the original video's format and tone
+
+Your job: Select the best segments for this specific format, order them for narrative flow, and explain what was dropped and why.
+
+## Selection Rules
+
+- Stay within the duration range specified in the cut spec
 - Use word-level timestamps for precise cuts
 - Add 0.1s pre-padding before the first word (breathing room)
 - Add 0.3s post-padding after the last word (natural decay)
 - Prefer cutting at natural speech boundaries (pauses, sentence ends)
 - Ensure start time is never negative
+- Never cut mid-sentence or mid-thought
+
+## For Hook Specs (is_hook=true)
+
+- Select a single, attention-grabbing moment
+- Must work standalone — no context needed
+- Prioritize segments tagged `strong_hook`, `contrarian`, or `emotional`
+- The hook will be prepended to longer clips, so it should tease without spoiling
 
 ## Narration Guidelines
 
-- **Intro**: 1-2 sentences. Hook the viewer. Tease the best insight. Speak in first person as the founder.
+- **Intro**: 1-2 sentences. Hook the viewer. Tease the best insight. First person as the founder.
 - **Outro**: 1-2 sentences. Summarize the key takeaway. Include a call to action. First person.
 - Keep narration punchy — each should be under 10 seconds when spoken.
+- For hook specs: leave narration empty (hooks don't get intro/outro).
 
-## Focus Hints
+## Dropped Segments
 
-For each segment, indicate where the speaker/subject is likely positioned:
-- "center" (default) — speaker is centered in frame
-- "left_third" — speaker is on the left side
-- "right_third" — speaker is on the right side
-This helps with portrait (9:16) cropping.
+For every segment scored 5+ that you did NOT include, explain why it was dropped. This transparency helps the user understand your editorial choices.
 """
 
 
-def build_user_prompt(transcript_text: str, target_duration: float) -> str:
-    """Build the user prompt with transcript and constraints."""
+def build_selection_user_prompt(
+    analysis_json: str,
+    cut_spec_dict: dict,
+    source_context: SourceContext | None = None,
+) -> str:
+    """Build the user prompt for cut plan selection."""
+    spec_text = json.dumps(cut_spec_dict, indent=2)
+
+    channels = ", ".join(cut_spec_dict.get("channels", [])) or "general"
+    motion = cut_spec_dict.get("motion", "")
+    editorial = cut_spec_dict.get("editorial_lens", "")
+    angle = cut_spec_dict.get("content_angle", "")
+
+    source_block = ""
+    if source_context and (source_context.format or source_context.tone):
+        parts = []
+        if source_context.format:
+            parts.append(f"- Source format: {source_context.format}")
+        if source_context.tone:
+            parts.append(f"- Tone: {source_context.tone}")
+        source_block = "\nSource context:\n" + "\n".join(parts) + "\n"
+
     return f"""\
-Here is the full transcript with word-level timestamps. Select the best segments to create a video of approximately {target_duration:.0f} seconds.
+Here is the scored transcript analysis:
 
-<transcript>
-{transcript_text}
-</transcript>
+<analysis>
+{analysis_json}
+</analysis>
 
-Use the create_edit_decision tool to return your selections. Remember:
-- Target total duration: ~{target_duration:.0f} seconds
+Create a cut plan for this content format:
+
+<cut_spec>
+{spec_text}
+</cut_spec>
+{source_block}
+Use the create_cut_plan tool. Key constraints:
+- Target duration: {cut_spec_dict['min_duration']:.0f}-{cut_spec_dict['max_duration']:.0f} seconds
+- Target channels: {channels}
+- Motion/tone: {motion}
+- Cutting guidance: {editorial}
+{f'- Content angle: {angle}' if angle else ''}\
+- Is hook: {cut_spec_dict.get('is_hook', False)}
 - Quality over quantity — fewer great segments beat many mediocre ones
-- The first segment is the hook — make it count
-- Write intro/outro narration in the founder's voice (first person)
+- Explain why you dropped any high-scoring segments
 """
+
+
+# --- Shared helpers ---
 
 
 def format_transcript_for_prompt(segments: list) -> str:

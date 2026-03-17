@@ -32,7 +32,6 @@ class AIConfig:
     model: str = "claude-opus-4-20250115"
     max_tokens: int = 8192
     temperature: float = 0.3
-    target_total_duration: int = 300
 
 
 @dataclass
@@ -49,6 +48,9 @@ class VideoConfig:
     watermark_position: str = "bottom_right"
     watermark_opacity: float = 0.3
     watermark_scale: float = 0.08
+    moods_file: str = "config/cut_specs/moods.json"  # mood definitions
+    music_dir: str = "assets/music"  # mood audio files: {music_dir}/{mood_name}.mp3
+    music_volume: float = 0.10  # 0.0-1.0, default mix level under speech
 
 
 @dataclass
