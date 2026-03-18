@@ -1,0 +1,69 @@
+{
+  "generated": "2026-03-19",
+  "total_sources": 52,
+  "chapters": {
+    "01-technical-qc": [
+      {"source": "Netflix Introduction to QC", "url": "https://partnerhelp.netflixstudios.com/hc/en-us/articles/115000353211-Introduction-to-Netflix-Quality-Control-QC"},
+      {"source": "Netflix Branded Content QC Error Code Glossary V2.5", "url": "https://help.prodicle.com/hc/en-us/articles/360038427533-Netflix-Originals-Branded-Content-QC-Error-Code-Glossary-V2-5"},
+      {"source": "Netflix Production QC Glossary Guide", "url": "https://partnerhelp.netflixstudios.com/hc/en-us/articles/13724350693139-The-Production-QC-Glossary-Guide"},
+      {"source": "QCCentral Broadcast QC FAQ", "url": "https://www.qccentral.com/broadcast-video-quality-control-faq/"},
+      {"source": "QCCentral QC Report Template", "url": "https://www.qccentral.com/qc-re-port/"},
+      {"source": "Clearcast QC Steps, Failures & Templates", "url": "https://help.clearcast.co.uk/en/article/qc-steps-failures-templates"},
+      {"source": "Telestream Vidchecker", "url": "https://www.telestream.net/vidchecker/overview.htm"},
+      {"source": "Interra Systems BATON", "url": "https://www.interrasystems.com/file-based-qc.php"},
+      {"source": "EBU R128 Standard", "url": "https://tech.ebu.ch/publications/r128"}
+    ],
+    "02-hook-diagnosis": [
+      {"source": "Retention Rabbit Hook Strategies", "url": "https://www.retentionrabbit.com/blog/youtube-hook-strategy-to-keep-viewers-watching"},
+      {"source": "OpusClip Shorts Hook Formulas", "url": "https://www.opus.pro/blog/youtube-shorts-hook-formulas"},
+      {"source": "Stash LM YouTube Hook Grader", "url": "https://stashlm.com/tools/youtube-hook-grader/"},
+      {"source": "Animoto First 3 Seconds", "url": "https://animoto.com/blog/video-marketing/why-first-3-seconds-matter"},
+      {"source": "PlayPlay Video Hooks", "url": "https://playplay.com/blog/video-hooks/"}
+    ],
+    "03-retention-diagnosis": [
+      {"source": "AIR Media-Tech Advanced Retention Editing", "url": "https://air.io/en/youtube-hacks/advanced-retention-editing-cutting-patterns-that-keep-viewers-past-minute-8"},
+      {"source": "Retention Rabbit 2025 Benchmark Report", "url": "https://www.retentionrabbit.com/blog/2025-youtube-audience-retention-benchmark-report"},
+      {"source": "Mayer Cognitive Load Theory (UCSD)", "url": "https://multimedia.ucsd.edu/best-practices/multimedia-learning.html"},
+      {"source": "Effectiviology Von Restorff", "url": "https://effectiviology.com/von-restorff-isolation-effect/"}
+    ],
+    "04-emotional-arc": [
+      {"source": "Reagan et al. Six Emotional Arcs", "url": "https://cdanfort.w3.uvm.edu/research/2016-reagan-epj.pdf"},
+      {"source": "Six Emotional Arcs (MIT Technology Review)", "url": "https://www.technologyreview.com/2016/07/06/158961/data-mining-reveals-the-six-basic-emotional-arcs-of-storytelling/"},
+      {"source": "NN/g Peak-End Rule", "url": "https://www.nngroup.com/articles/peak-end-rule/"},
+      {"source": "Decision Lab Peak-End Rule", "url": "https://thedecisionlab.com/biases/peak-end-rule"},
+      {"source": "Audio-Visual Sentiment for Emotional Arcs (Chu 2017)", "url": "https://arxiv.org/abs/1712.02896"},
+      {"source": "Imentiv AI Valence-Arousal Model", "url": "https://imentiv.ai/blog/exploring-the-valence-arousal-model-in-video-analysis-with-emotion-ai/"}
+    ],
+    "05-platform-readiness": [
+      {"source": "Orson Lord Safe Zone Overlays", "url": "https://orsonlord.com/articles/free-safe-zone-overlays-for-reels-tiktok-and-shorts"},
+      {"source": "Kreatli Safe Zone Guide", "url": "https://kreatli.com/guides/safe-zone-guide"},
+      {"source": "GARM Brand Safety Framework", "url": "https://4962377.fs1.hubspotusercontent-na1.net/hubfs/4962377/resource-library/GARM%20Brand%20Safety%20Floor%20Suitability%20Framework%2023%20Sept%20(3).pdf"},
+      {"source": "YouTube Satisfaction Signals (Marketing Agent)", "url": "https://marketingagent.blog/2025/11/04/youtubes-recommendation-algorithm-satisfaction-signals-what-you-can-control/"},
+      {"source": "YouTube Algorithm (vidIQ)", "url": "https://vidiq.com/blog/post/understanding-youtube-algorithm/"},
+      {"source": "TikTok Algorithm 2026 (Buffer)", "url": "https://buffer.com/resources/tiktok-algorithm/"},
+      {"source": "Instagram Algorithm 2026 (Buffer)", "url": "https://buffer.com/resources/instagram-algorithms/"}
+    ],
+    "06-scoring-system": [
+      {"source": "IndieFEST Judges Scoring Criteria", "url": "https://theindiefest.com/judges-scoring-criteria/"},
+      {"source": "PBS Editorial Standards", "url": "https://www.pbs.org/about/producing-pbs/editorial-standards.pdf"},
+      {"source": "OpusClip Virality Score", "url": "https://help.opus.pro/docs/article/virality-score"},
+      {"source": "Google E-E-A-T Quality Rater Guidelines", "url": "https://services.google.com/fh/files/misc/hsw-sqrg.pdf"},
+      {"source": "UW Stout Video Rubric", "url": "https://www2.uwstout.edu/content/profdev/rubrics/videorubric.html"},
+      {"source": "arXiv VLM Virality Rubric", "url": "https://arxiv.org/abs/2512.21402"},
+      {"source": "Paddy Galloway Evaluation Pillars", "url": "https://www.marketingexamined.com/blog/paddy-galloway-youtube-guide"},
+      {"source": "vidIQ Channel Audit", "url": "https://vidiq.com/features/channel-audit/"}
+    ],
+    "07-feedback-format": [
+      {"source": "Pixar Braintrust", "url": "https://www.shortform.com/blog/pixar-braintrust/"},
+      {"source": "Pixar Plussing Technique", "url": "https://intenseminimalism.com/2015/pixars-plussing-technique-of-giving-feedback/"},
+      {"source": "SBI Feedback Model (CCL)", "url": "https://www.ccl.org/articles/leading-effectively-articles/sbi-feedback-model-a-quick-win-to-improve-talent-conversations-development/"},
+      {"source": "Stage-Matched Notes in Post-Production", "url": "https://medium.com/movie-time/how-to-give-notes-in-post-production-76046dfb1575"},
+      {"source": "Filestage Creative Review Process", "url": "https://filestage.io/blog/creative-review-process/"},
+      {"source": "Frame.io Commenting", "url": "https://help.frame.io/en/articles/9105251-commenting-on-your-media"},
+      {"source": "Frame.io Workflow Guide", "url": "https://workflow.frame.io/guide/receiving-feedback"},
+      {"source": "Fresh Eyes Principle (Oxford)", "url": "https://focus.admin.ox.ac.uk/files/fresheyespdf"},
+      {"source": "Review Cycles Diminishing Returns (Jane Friedman)", "url": "https://janefriedman.com/when-to-let-go-recognize-the-point-of-diminishing-returns-in-revision/"},
+      {"source": "Stop-Start-Continue Framework", "url": "https://www.peoplebeam.com/blog/understanding-the-stop-start-and-continue-feedback-framework-10-examples"}
+    ]
+  }
+}
