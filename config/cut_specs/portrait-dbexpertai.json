@@ -5,7 +5,13 @@
     "intro_9x16": "assets/intros/dbexpert-intro-9x16.mp4",
     "outro_16x9": "assets/outros/dbexpert-outro-16x9.mp4",
     "outro_9x16": "assets/outros/dbexpert-outro-9x16.mp4",
-    "watermark": "assets/watermarks/dbexpertai-watermark.png"
+    "watermark": "assets/watermarks/dbexpertai-watermark.png",
+    "watermark_9x16": {
+      "scale": 0.40,
+      "opacity": 0.9,
+      "x": "W-w-40",
+      "y": "H-h-65"
+    }
   },
   "source": {
     "format": "iPhone recording, podcast-style rant with opinion and stories",
@@ -19,7 +25,7 @@
       "min_duration": 7,
       "max_duration": 15,
       "is_hook": true,
-      "mood": "intense",
+      "mood_options": ["tension", "drive"],
       "channels": ["Instagram Reel", "TikTok Video"],
       "motion": "Stories / Opinion",
       "editorial_lens": "Extract the single most surprising or provocative moment — a stat, a failure, a hot take. Must hook in the first frame."
@@ -28,7 +34,7 @@
       "name": "tip",
       "min_duration": 15,
       "max_duration": 30,
-      "mood": "punchy",
+      "mood_options": ["drive", "steady"],
       "channels": ["Facebook Reel", "Facebook Story", "Instagram Reel", "TikTok Video", "YouTube Short"],
       "motion": "Teaching",
       "editorial_lens": "Extract one standalone tip or 'did you know' — one concept, one takeaway, no setup needed."
@@ -38,7 +44,7 @@
       "min_duration": 30,
       "max_duration": 60,
       "prepend_hook": true,
-      "mood": "building",
+      "mood_options": ["tension", "drive"],
       "channels": ["Facebook Reel", "Instagram Story", "YouTube Short"],
       "motion": "Teaching / Proof",
       "editorial_lens": "Pick a problem → solution → result segment. Should show a before/after or a demo with a visible outcome."
@@ -48,7 +54,7 @@
       "min_duration": 60,
       "max_duration": 120,
       "prepend_hook": true,
-      "mood": "building",
+      "mood_options": ["tension", "drive", "steady"],
       "channels": ["Facebook Reel", "Facebook Story", "Instagram Reel", "TikTok Video", "YouTube Short"],
       "motion": "Teaching / Stories",
       "editorial_lens": "Pick a fuller narrative arc — explainer with a hook, or an incident story with tension and resolution. Needs strong opening to survive drop-off."
@@ -58,7 +64,7 @@
       "min_duration": 180,
       "max_duration": 480,
       "prepend_hook": true,
-      "mood": "focus",
+      "mood_options": ["steady", "drive"],
       "channels": ["Facebook Reel", "TikTok Video"],
       "motion": "Teaching / Proof",
       "editorial_lens": "Full deep-dive segment — complete tutorial or benchmark walkthrough. Only viable when retention data supports it."

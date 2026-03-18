@@ -1,39 +1,42 @@
 {
   "moods": [
     {
-      "name": "intense",
-      "duration": 15,
-      "used_by": ["hook"],
-      "description": "Short stinger for hooks and attention-grabbing moments",
-      "generation_prompt": "Short intense electronic stinger, percussion hit, rising energy, dramatic, attention-grabbing, no vocals, 120+ BPM, 15 seconds"
+      "name": "drive",
+      "valence": "positive",
+      "arousal": "high",
+      "bpm": 120,
+      "files": ["drive-1.wav", "drive-2.wav", "drive-3.wav"],
+      "used_by": ["core", "tip", "highlight", "segment"],
+      "description": "Positive high-energy. Confident, upbeat, forward momentum. For tips, demos, hot takes, founder segments.",
+      "generation_prompt": "Upbeat confident electronic beat, positive energy, clean synths, driving rhythm, consistent tempo, modern and polished, stable percussion, no vocals, exactly 120 BPM"
     },
     {
-      "name": "punchy",
-      "duration": 30,
-      "used_by": ["core", "tip", "highlight"],
-      "description": "Upbeat and confident for standalone tips and highlights",
-      "generation_prompt": "Upbeat confident electronic beat, clean and modern, short loop, energetic but not aggressive, no vocals, 110 BPM, 30 seconds"
+      "name": "tension",
+      "valence": "negative",
+      "arousal": "high",
+      "bpm": 120,
+      "files": ["tension-1.wav", "tension-2.wav", "tension-3.wav"],
+      "used_by": ["hook", "problem_solution", "narrative", "arc"],
+      "description": "Negative high-energy. Urgent, tense, dramatic. For hooks, breaking news, incidents, narrative tension.",
+      "generation_prompt": "Dark urgent electronic underscore, minor key, pulsing bass, tense atmosphere, serious and intense, consistent driving rhythm, stable percussion, no vocals, exactly 120 BPM"
     },
     {
-      "name": "building",
-      "duration": 90,
-      "used_by": ["problem_solution", "arc", "narrative"],
-      "description": "Tension that builds and resolves for narrative segments",
-      "generation_prompt": "Cinematic building track, starts minimal and low, gradually adds layers, tension rising to satisfying resolution, no vocals, 100 BPM, 90 seconds"
-    },
-    {
-      "name": "focus",
-      "duration": 90,
+      "name": "steady",
+      "valence": "positive",
+      "arousal": "low",
+      "bpm": 80,
+      "files": ["steady-1.wav", "steady-2.wav", "steady-3.wav"],
       "used_by": ["focused_tutorial", "deep_dive", "full_segment"],
-      "description": "Ambient background for long-form educational content",
-      "generation_prompt": "Ambient lo-fi background music, minimal, calm concentration, soft pads, unobtrusive, designed to sit behind narration, no vocals, 80 BPM, 90 seconds"
-    },
-    {
-      "name": "warm",
-      "duration": 60,
-      "used_by": ["segment"],
-      "description": "Conversational and human for founder story segments",
-      "generation_prompt": "Warm acoustic feel, conversational and human, gentle guitar or piano, optimistic but grounded, no vocals, 95 BPM, 60 seconds"
+      "description": "Positive low-energy. Calm, unobtrusive, sits behind narration. For tutorials, deep dives, long-form.",
+      "generation_prompt": "Calm ambient background music, warm pads, gentle and unobtrusive, positive but subtle, consistent soft rhythm, designed to sit behind narration, stable tempo, no vocals, exactly 80 BPM"
     }
+  ],
+  "research": [
+    "Having music matters more than which music — EEG shows attention increase vs silence regardless of tempo (PMC9713244)",
+    "Positive valence + high arousal = best retention and recall (PMC11045806)",
+    "Stable rhythm drives positive emotions; flowing rhythm drives melancholy (PMC9644217)",
+    "Music regulates mood first, then arousal — mood precedes arousal in causal chain (PMC11045806)",
+    "Custom-scored music can be less engaging than generic well-matched music (arxiv 2601.17893v1)",
+    "Drive and tension share 120 BPM for seamless cuts; steady at 80 BPM (2:3 ratio) for rhythmic compatibility"
   ]
 }

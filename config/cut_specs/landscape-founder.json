@@ -19,7 +19,7 @@
       "min_duration": 7,
       "max_duration": 15,
       "is_hook": true,
-      "mood": "intense",
+      "mood_options": ["tension", "drive"],
       "channels": ["Instagram Reel"],
       "editorial_lens": "The boldest single moment. Must land in the first frame. Pattern interrupt or provocative claim — a stat, a failure, a hot take."
     },
@@ -27,7 +27,7 @@
       "name": "core",
       "min_duration": 15,
       "max_duration": 30,
-      "mood": "punchy",
+      "mood_options": ["drive", "tension"],
       "channels": ["X Post"],
       "editorial_lens": "One complete thought — an opinion, a tip, a lesson. No preamble. Tightest version of the take. Works as a standalone clip in a tweet."
     },
@@ -35,7 +35,7 @@
       "name": "segment",
       "min_duration": 30,
       "max_duration": 60,
-      "mood": "warm",
+      "mood_options": ["drive", "tension", "steady"],
       "channels": ["LinkedIn Post", "X Post"],
       "editorial_lens": "A single complete thought with enough context to stand alone. LinkedIn rewards narrative arc; X rewards strong opinions."
     }

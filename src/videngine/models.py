@@ -35,6 +35,41 @@ class Transcript(BaseModel):
     segments: list[TranscriptSegment]
 
 
+# --- Loudness Measurement (Stage 3 — cut) ---
+
+
+class LoudnessMeasurement(BaseModel):
+    input_i: float  # measured integrated loudness (LUFS)
+    input_tp: float  # measured true peak (dBTP)
+    input_lra: float  # measured loudness range (LU)
+    input_thresh: float
+    target_offset: float
+
+
+# --- Visual Context (Stage 1 — transcribe) ---
+
+
+class SceneChange(BaseModel):
+    timestamp: float  # seconds
+    score: float  # 0.0-1.0 magnitude
+
+
+class VisualSegment(BaseModel):
+    start: float
+    end: float
+    duration: float
+    motion_level: str = ""  # "low", "medium", "high"
+
+
+class VisualContext(BaseModel):
+    source_file: str
+    duration_seconds: float
+    scene_changes: list[SceneChange]
+    visual_segments: list[VisualSegment]
+    total_scene_changes: int
+    avg_scene_duration: float
+
+
 # --- Cut Spec File (pipeline input) ---
 
 
@@ -56,21 +91,32 @@ class CutSpec(BaseModel):
     editorial_lens: str = ""  # cutting guidance for the AI
     is_hook: bool = False  # True for the 7-15s hook spec
     prepend_hook: bool = False  # True = prepend the hook clip to this cut
-    mood: str = ""  # references a mood name from moods.json
+    mood_options: list[str] = Field(default_factory=list)  # mood names from moods.json — agent picks one
 
 
 class Mood(BaseModel):
-    """A music mood from moods.json — maps to an audio file at assets/music/{name}.mp3."""
+    """A music mood from moods.json — maps to audio files at assets/music/{file}."""
     name: str
-    duration: int  # seconds — length of the source track
+    valence: str = ""  # "positive" or "negative"
+    arousal: str = ""  # "high" or "low"
+    bpm: int = 120
+    files: list[str] = Field(default_factory=list)  # e.g. ["drive-1.wav", "drive-2.wav", "drive-3.wav"]
     used_by: list[str] = Field(default_factory=list)
     description: str = ""
-    generation_prompt: str = ""  # for future AI music generation
+    generation_prompt: str = ""
 
 
 class MoodsConfig(BaseModel):
     """Top-level structure of moods.json."""
     moods: list[Mood] = Field(default_factory=list)
+
+
+class WatermarkPosition(BaseModel):
+    """Watermark overlay position and appearance for a specific aspect ratio."""
+    scale: float = 0.40
+    opacity: float = 0.9
+    x: str = "W-w-65"  # ffmpeg overlay x expression
+    y: str = "H-h-40"  # ffmpeg overlay y expression
 
 
 class Branding(BaseModel):
@@ -80,6 +126,8 @@ class Branding(BaseModel):
     outro_16x9: str = ""
     outro_9x16: str = ""
     watermark: str = ""
+    watermark_16x9: WatermarkPosition = Field(default_factory=WatermarkPosition)
+    watermark_9x16: WatermarkPosition = Field(default_factory=WatermarkPosition)
 
 
 class CutSpecFile(BaseModel):
@@ -139,6 +187,7 @@ class DroppedSegment(BaseModel):
 
 class CutPlan(BaseModel):
     spec_name: str
+    mood: str = ""  # mood chosen by the agent from the spec's mood_options
     segments: list[SelectedSegment]
     dropped_segments: list[DroppedSegment]
     full_text: str

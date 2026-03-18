@@ -21,6 +21,7 @@ from .models import (
     StageResult,
     StageStatus,
     Transcript,
+    VisualContext,
 )
 
 console = Console()
@@ -217,23 +218,29 @@ class Pipeline:
     # --- Stage implementations ---
 
     def _stage_transcribe(self) -> None:
-        from .stages.transcribe import run_transcribe
+        from .stages.transcribe import run_transcribe, run_visual_analysis
 
         run_transcribe(
             self.job.source_file, self.job.working_dir, self.config
         )
+        run_visual_analysis(
+            self.job.source_file, self.job.working_dir,
+        )
         self.job.stages["transcribe"].artifacts = {
             "transcript": "transcript.json",
             "audio": "audio.wav",
+            "visual_context": "visual_context.json",
         }
 
     def _stage_analyze(self) -> None:
         from .stages.analyze import run_analyze
 
         transcript = self._load_transcript()
+        visual_context = self._load_visual_context()
         cut_plans = run_analyze(
             transcript, self.job.working_dir, self.config,
             self.cut_specs, self.source_context,
+            visual_context=visual_context,
         )
         artifacts = {"_analysis": "cut_plans/_analysis.json"}
         for plan in cut_plans:
@@ -293,6 +300,12 @@ class Pipeline:
     def _load_transcript(self) -> Transcript:
         path = Path(self.job.working_dir) / "transcript.json"
         return Transcript.model_validate_json(path.read_text())
+
+    def _load_visual_context(self) -> VisualContext | None:
+        path = Path(self.job.working_dir) / "visual_context.json"
+        if path.exists():
+            return VisualContext.model_validate_json(path.read_text())
+        return None
 
     def _load_cut_plans(self) -> list[CutPlan]:
         """Load all cut plans from the cut_plans/ directory."""

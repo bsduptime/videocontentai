@@ -93,6 +93,70 @@ def scale_to_1080p(
     ]
 
 
+def loudnorm_measure(
+    input_path: str,
+    target_lufs: float = -16.0,
+    true_peak: float = -1.5,
+    lra: float = 11.0,
+) -> list[str]:
+    """Pass 1: measure loudness stats (outputs JSON to stderr)."""
+    af = (
+        f"loudnorm=I={target_lufs}:TP={true_peak}:LRA={lra}"
+        f":print_format=json"
+    )
+    return [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-af", af,
+        "-f", "null", "-",
+    ]
+
+
+def loudnorm_apply(
+    input_path: str,
+    output_path: str,
+    encoding: EncodingConfig,
+    target_lufs: float = -16.0,
+    true_peak: float = -1.5,
+    lra: float = 11.0,
+    measured_i: float = -24.0,
+    measured_tp: float = -2.0,
+    measured_lra: float = 7.0,
+    measured_thresh: float = -34.0,
+    offset: float = 0.0,
+) -> list[str]:
+    """Pass 2: apply linear loudness correction. Video stream-copied."""
+    af = (
+        f"loudnorm=I={target_lufs}:TP={true_peak}:LRA={lra}"
+        f":measured_I={measured_i}:measured_TP={measured_tp}"
+        f":measured_LRA={measured_lra}:measured_thresh={measured_thresh}"
+        f":offset={offset}:linear=true:print_format=summary"
+    )
+    return [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-af", af,
+        "-c:v", "copy",
+        *_audio_encode_args(encoding),
+        output_path,
+    ]
+
+
+def detect_scenes(
+    input_path: str,
+    threshold: float = 0.3,
+) -> list[str]:
+    """Detect scene changes using select filter + showinfo (decode only, no output)."""
+    vf = f"select='gt(scene,{threshold})',showinfo"
+    return [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-vf", vf,
+        "-an",
+        "-f", "null", "-",
+    ]
+
+
 def mix_background_music(
     input_path: str,
     music_path: str,
@@ -130,12 +194,17 @@ def apply_watermark(
     watermark_path: str,
     output_path: str,
     encoding: EncodingConfig,
-    position: str = "bottom_right",
-    opacity: float = 0.3,
-    scale: float = 0.08,
+    scale: float = 0.40,
+    opacity: float = 0.9,
+    x: str = "W-w-65",
+    y: str = "H-h-40",
 ) -> list[str]:
     """Apply watermark overlay to a video. Re-encodes video, copies audio."""
-    filter_graph = watermark_overlay(position=position, opacity=opacity, scale=scale)
+    filter_graph = (
+        f"[1:v]scale=iw*{scale}:-1,format=rgba,"
+        f"colorchannelmixer=aa={opacity}[wm];"
+        f"[0:v][wm]overlay={x}:{y}"
+    )
 
     return [
         "ffmpeg", "-y",

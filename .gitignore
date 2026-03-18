@@ -6,16 +6,8 @@ build/
 *.pyc
 .env
 
-# Source video files (large)
-source/to_cut/**/*.mov
-source/to_cut/**/*.mp4
-source/in_progress/
-source/done/
+# Source videos and jobs (symlinked to SD card)
+source
 
-# Music assets (tracked via LFS or manually)
+# Music alternate takes
 assets/music/intense-v2.wav
-
-# Python
-.venv/
-__pycache__/
-*.pyc

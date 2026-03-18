@@ -12,6 +12,7 @@ from ..ai.prompts import (
     build_analysis_user_prompt,
     build_selection_user_prompt,
     format_transcript_for_prompt,
+    format_visual_context,
 )
 from ..config import Config
 from ..models import (
@@ -21,6 +22,7 @@ from ..models import (
     SourceContext,
     Transcript,
     TranscriptAnalysis,
+    VisualContext,
 )
 
 
@@ -30,6 +32,7 @@ def run_analyze(
     config: Config,
     cut_specs: list[CutSpec],
     source_context: SourceContext | None = None,
+    visual_context: VisualContext | None = None,
 ) -> list[CutPlan]:
     """Run two-phase AI analysis: score all segments, then create per-spec cut plans."""
     work = Path(working_dir)
@@ -37,15 +40,16 @@ def run_analyze(
     plans_dir.mkdir(exist_ok=True)
 
     client = AIClient(config.ai)
+    visual_text = format_visual_context(visual_context) if visual_context else None
 
     # Phase 1: Analyze and score all segments
     transcript_text = format_transcript_for_prompt(transcript.segments)
 
     estimated_tokens = len(transcript_text) * 0.75
     if estimated_tokens > 50_000:
-        analysis = _analyze_chunked(transcript, client, source_context)
+        analysis = _analyze_chunked(transcript, client, source_context, visual_text)
     else:
-        analysis = _analyze_single(transcript_text, client, source_context)
+        analysis = _analyze_single(transcript_text, client, source_context, visual_text)
 
     # Save analysis
     analysis_path = plans_dir / "_analysis.json"
@@ -55,7 +59,7 @@ def run_analyze(
     analysis_json = analysis.model_dump_json(indent=2)
     cut_plans = []
     for spec in cut_specs:
-        plan = _create_cut_plan(analysis_json, spec, client, source_context)
+        plan = _create_cut_plan(analysis_json, spec, client, source_context, visual_text)
         plan_path = plans_dir / f"{spec.name}.json"
         plan_path.write_text(plan.model_dump_json(indent=2))
         cut_plans.append(plan)
@@ -67,9 +71,10 @@ def _analyze_single(
     transcript_text: str,
     client: AIClient,
     source_context: SourceContext | None = None,
+    visual_text: str | None = None,
 ) -> TranscriptAnalysis:
     """Single-pass analysis for normal-length transcripts."""
-    user_prompt = build_analysis_user_prompt(transcript_text, source_context)
+    user_prompt = build_analysis_user_prompt(transcript_text, source_context, visual_text)
     raw = client.analyze_transcript(ANALYSIS_SYSTEM_PROMPT, user_prompt)
     return TranscriptAnalysis.model_validate(raw)
 
@@ -78,6 +83,7 @@ def _analyze_chunked(
     transcript: Transcript,
     client: AIClient,
     source_context: SourceContext | None = None,
+    visual_text: str | None = None,
 ) -> TranscriptAnalysis:
     """Chunked analysis for long transcripts (>50K estimated tokens).
 
@@ -105,7 +111,7 @@ def _analyze_chunked(
 
     for chunk_segments in chunks:
         chunk_text = format_transcript_for_prompt(chunk_segments)
-        user_prompt = build_analysis_user_prompt(chunk_text, source_context)
+        user_prompt = build_analysis_user_prompt(chunk_text, source_context, visual_text)
         raw = client.analyze_transcript(ANALYSIS_SYSTEM_PROMPT, user_prompt)
         chunk_analysis = TranscriptAnalysis.model_validate(raw)
         all_scored.extend(chunk_analysis.scored_segments)
@@ -127,10 +133,11 @@ def _create_cut_plan(
     spec: CutSpec,
     client: AIClient,
     source_context: SourceContext | None = None,
+    visual_text: str | None = None,
 ) -> CutPlan:
     """Create a cut plan for a specific content format."""
     user_prompt = build_selection_user_prompt(
-        analysis_json, spec.model_dump(), source_context
+        analysis_json, spec.model_dump(), source_context, visual_text
     )
     raw = client.create_cut_plan(SELECTION_SYSTEM_PROMPT, user_prompt)
     return CutPlan.model_validate(raw)

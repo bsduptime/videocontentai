@@ -6,7 +6,7 @@ import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..models import SourceContext
+    from ..models import SourceContext, VisualContext
 
 # --- Phase 1: Transcript Analysis ---
 
@@ -44,12 +44,21 @@ Identify 3-5 major themes that run through the transcript. These help with conte
 ## Hook Recommendations
 
 Flag segment IDs that would make strong opening hooks — attention-grabbing, surprising, or emotionally charged moments that work in the first 3 seconds.
+
+## Visual Context
+
+When visual context is provided (scene changes, visual segments):
+- Scene changes are natural cut points — prefer cutting at these boundaries
+- Low-motion segments likely contain code demos, slides, or screen recordings — keep these intact, do not cut mid-demo
+- High-motion segments suggest camera movement or transitions
+- Use visual segments to corroborate transcript content (e.g., a low-motion segment during a technical explanation confirms it's a screen recording)
 """
 
 
 def build_analysis_user_prompt(
     transcript_text: str,
     source_context: SourceContext | None = None,
+    visual_text: str | None = None,
 ) -> str:
     """Build the user prompt for transcript analysis."""
     source_block = ""
@@ -63,9 +72,13 @@ def build_analysis_user_prompt(
             parts.append(f"- Aspect ratio: {source_context.aspect_ratio}")
         source_block = "\nSource context:\n" + "\n".join(parts) + "\n"
 
+    visual_block = ""
+    if visual_text:
+        visual_block = f"\n<visual_context>\n{visual_text}\n</visual_context>\n"
+
     return f"""\
 Analyze every segment in this transcript. Score each 1-10, tag them, identify themes, and recommend hook candidates.
-{source_block}
+{source_block}{visual_block}
 <transcript>
 {transcript_text}
 </transcript>
@@ -96,6 +109,15 @@ Your job: Select the best segments for this specific format, order them for narr
 - Ensure start time is never negative
 - Never cut mid-sentence or mid-thought
 
+## Mood Selection
+
+Each cut spec provides `mood_options` — a list of available background music moods. Pick the one that best matches the emotional arc of the segments you selected:
+- **drive** — positive high-energy: confident, upbeat, forward momentum (120 BPM)
+- **tension** — negative high-energy: urgent, tense, dramatic (120 BPM)
+- **steady** — positive low-energy: calm, unobtrusive, sits behind narration (80 BPM)
+
+Return your choice in the `mood` field. Consider the content's tone: a triumphant demo → drive, a failure post-mortem → tension, a calm walkthrough → steady.
+
 ## For Hook Specs (is_hook=true)
 
 - Select a single, attention-grabbing moment
@@ -110,6 +132,13 @@ Your job: Select the best segments for this specific format, order them for narr
 - Keep narration punchy — each should be under 10 seconds when spoken.
 - For hook specs: leave narration empty (hooks don't get intro/outro).
 
+## Visual Context
+
+When visual context is provided:
+- Prefer cutting at scene change boundaries — these are natural edit points
+- Keep screen recording and demo segments intact — do not cut mid-demo
+- Low-motion segments (code, slides) should be included or excluded as a whole
+
 ## Dropped Segments
 
 For every segment scored 5+ that you did NOT include, explain why it was dropped. This transparency helps the user understand your editorial choices.
@@ -120,6 +149,7 @@ def build_selection_user_prompt(
     analysis_json: str,
     cut_spec_dict: dict,
     source_context: SourceContext | None = None,
+    visual_text: str | None = None,
 ) -> str:
     """Build the user prompt for cut plan selection."""
     spec_text = json.dumps(cut_spec_dict, indent=2)
@@ -138,6 +168,10 @@ def build_selection_user_prompt(
             parts.append(f"- Tone: {source_context.tone}")
         source_block = "\nSource context:\n" + "\n".join(parts) + "\n"
 
+    visual_block = ""
+    if visual_text:
+        visual_block = f"\n<visual_context>\n{visual_text}\n</visual_context>\n"
+
     return f"""\
 Here is the scored transcript analysis:
 
@@ -150,7 +184,7 @@ Create a cut plan for this content format:
 <cut_spec>
 {spec_text}
 </cut_spec>
-{source_block}
+{source_block}{visual_block}
 Use the create_cut_plan tool. Key constraints:
 - Target duration: {cut_spec_dict['min_duration']:.0f}-{cut_spec_dict['max_duration']:.0f} seconds
 - Target channels: {channels}
@@ -158,12 +192,38 @@ Use the create_cut_plan tool. Key constraints:
 - Cutting guidance: {editorial}
 {f'- Content angle: {angle}' if angle else ''}\
 - Is hook: {cut_spec_dict.get('is_hook', False)}
+- Mood options: {', '.join(cut_spec_dict.get('mood_options', [])) or 'none'}
 - Quality over quantity — fewer great segments beat many mediocre ones
 - Explain why you dropped any high-scoring segments
 """
 
 
 # --- Shared helpers ---
+
+
+def format_visual_context(visual_context: VisualContext) -> str:
+    """Render visual context as a timestamped text block for the AI prompt."""
+    lines = [
+        f"Source: {visual_context.source_file}",
+        f"Duration: {visual_context.duration_seconds:.1f}s",
+        f"Scene changes: {visual_context.total_scene_changes}",
+        f"Avg segment duration: {visual_context.avg_scene_duration:.1f}s",
+        "",
+        "Visual segments:",
+    ]
+    for seg in visual_context.visual_segments:
+        lines.append(
+            f"  [{_format_time(seg.start)} → {_format_time(seg.end)}] "
+            f"{seg.duration:.1f}s  motion={seg.motion_level}"
+        )
+
+    if visual_context.scene_changes:
+        lines.append("")
+        lines.append("Scene change timestamps:")
+        for sc in visual_context.scene_changes:
+            lines.append(f"  {_format_time(sc.timestamp)}  score={sc.score:.2f}")
+
+    return "\n".join(lines)
 
 
 def format_transcript_for_prompt(segments: list) -> str:

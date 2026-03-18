@@ -92,6 +92,7 @@ CREATE_CUT_PLAN_TOOL = {
         "type": "object",
         "required": [
             "spec_name",
+            "mood",
             "segments",
             "dropped_segments",
             "full_text",
@@ -107,6 +108,10 @@ CREATE_CUT_PLAN_TOOL = {
             "spec_name": {
                 "type": "string",
                 "description": "Name of the cut spec this plan is for",
+            },
+            "mood": {
+                "type": "string",
+                "description": "The mood you chose from mood_options. Pick the one that best matches the emotional arc of the selected segments.",
             },
             "segments": {
                 "type": "array",

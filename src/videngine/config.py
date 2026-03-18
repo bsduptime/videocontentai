@@ -51,6 +51,9 @@ class VideoConfig:
     moods_file: str = "config/cut_specs/moods.json"  # mood definitions
     music_dir: str = "assets/music"  # mood audio files: {music_dir}/{mood_name}.mp3
     music_volume: float = 0.10  # 0.0-1.0, default mix level under speech
+    loudnorm_target_lufs: float = -16.0  # EBU R128 target
+    loudnorm_true_peak: float = -1.5  # dBTP ceiling
+    loudnorm_lra: float = 11.0  # loudness range
 
 
 @dataclass
