@@ -61,11 +61,23 @@ class VisualSegment(BaseModel):
     motion_level: str = ""  # "low", "medium", "high"
 
 
+class FrameDescription(BaseModel):
+    timestamp: float  # seconds into the video
+    screen: str = ""  # what page/view is shown
+    visible_elements: str = ""  # UI elements, text, data visible
+    region_of_interest: str = ""  # where the action/focus is
+    visual_density: str = ""  # "low", "medium", "high", "very high"
+    overlay_opportunity: bool = False  # enough empty space for text overlay?
+    zoom_candidate: str | None = None  # description of element to zoom, or null
+
+
 class VisualContext(BaseModel):
     source_file: str
     duration_seconds: float
+    frame_interval: float = 30.0  # seconds between sampled frames
     scene_changes: list[SceneChange]
     visual_segments: list[VisualSegment]
+    frame_descriptions: list[FrameDescription] = Field(default_factory=list)
     total_scene_changes: int
     avg_scene_duration: float
 
@@ -185,6 +197,17 @@ class DroppedSegment(BaseModel):
     drop_reason: str
 
 
+class VisualEffect(BaseModel):
+    """A zoom or text overlay effect to apply during the watermark re-encode pass."""
+    effect_type: str  # "zoom" or "text_overlay"
+    start: float  # seconds — effect start time (relative to the cut clip)
+    end: float  # seconds — effect end time
+    zoom_target_x: str = "iw/2"  # ffmpeg expression for zoom center x
+    zoom_target_y: str = "ih/2"  # ffmpeg expression for zoom center y
+    zoom_factor: float = 1.3  # crop zoom factor (1.3 = gentle)
+    overlay_text: str = ""  # text to display (for text_overlay type)
+
+
 class CutPlan(BaseModel):
     spec_name: str
     mood: str = ""  # mood chosen by the agent from the spec's mood_options
@@ -198,6 +221,7 @@ class CutPlan(BaseModel):
     description: str
     hashtags: list[str]
     total_estimated_duration: float
+    visual_effects: list[VisualEffect] = Field(default_factory=list)
 
 
 # --- JobState (Resumability) ---

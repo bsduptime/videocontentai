@@ -41,8 +41,55 @@ Brand is detected from the subdirectory. Aspect ratio is detected from the video
   ```
 - Parse the whisper JSON output into a clean transcript
 
+### 2.5. Visual context (content-based scene detection)
+Detect scene changes using FFmpeg's pixel-difference `scene` filter with `metadata=print` to get scores (not keyframe/I-frame gaps — those are codec-level and miss UI transitions in screen recordings):
+```bash
+ffmpeg -y -i {source} \
+  -vf "select='gt(scene,0.05)',metadata=print:file={job_dir}/scene_scores.txt" \
+  -an -f null -
+```
+Use threshold `0.05` to capture all candidates including subtle screen recording transitions. Then post-filter:
+- Parse `scene_scores.txt` for `pts_time` and `lavfi.scene_score` pairs
+- Apply score threshold `0.08` (keeps real transitions, drops noise)
+- Deduplicate: merge changes within dedup window (see below), keeping highest score
+- Build `{job_dir}/visual_context.json`
+
+Motion level is inferred from boundary scores: >0.6 = high, >0.35 = medium, ≤0.35 = low.
+
+**Adaptive frame sampling** — interval and dedup window depend on `source.format` from the cut spec:
+
+| source.format contains | Frame interval | Dedup window |
+|------------------------|---------------|-------------|
+| "screen" (screen recording) | **10s** | 1.5s |
+| "talking" (talking-head) | **30s** | 2.0s |
+| default / other | **15s** | 2.0s |
+
+Then extract representative frames for visual analysis:
+```bash
+# Extract frames at scene changes + every {interval}s, scaled to 1280w for vision
+ffmpeg -y -ss {timestamp} -i {source} -vframes 1 -q:v 3 -vf "scale=1280:-1" {job_dir}/frames/frame_{MM}m{SS}s.jpg
+```
+- Merge scene change timestamps with {interval}s intervals, deduplicate within dedup window
+- Save timestamps to `{job_dir}/frames/frame_times.json`
+- Record `frame_interval` in `visual_context.json`
+
+### 2.6. Describe frames (YOU do this — read each frame image)
+Read each extracted frame with the Read tool and write a description for each to `visual_context.json` under `frame_descriptions[]`. For each frame, describe:
+- `screen`: what page/view is shown (e.g. "Fleet Overview dashboard", "SQL query modal")
+- `visible_elements`: UI elements, text, data visible on screen
+- `region_of_interest`: where the action/focus is (e.g. "right panel", "center modal")
+- `visual_density`: low/medium/high/very high — how busy the screen is
+- `overlay_opportunity`: boolean — is there enough empty space to overlay text/titles?
+- `zoom_candidate`: string or null — if small but important UI text/stats could benefit from a zoom-in effect during editing
+
+These descriptions let you make informed editing decisions:
+- **overlay_opportunity = true** → candidate for text overlays (highlight sentences, stats, titles)
+- **zoom_candidate** → consider pan-and-zoom effect to call attention to small UI elements
+- **visual_density = very high** → keep these segments intact, don't overlay or cut mid-screen
+- Match `region_of_interest` against transcript — if speaker says "look at this" while ROI is on a specific panel, that's a zoom-in moment
+
 ### 3. Analyze (YOU do this — no API call)
-Read the transcript, the cut spec file, and `visual_context.json` (scene changes from keyframe analysis). Use visual context to identify screen recording segments, natural cut points, and content type transitions. Scene changes = natural cut points; low-motion = likely screen content (keep intact). Then for each segment:
+Read the transcript, the cut spec file, and `visual_context.json` (content-based scene changes). Use visual context to identify screen recording segments, natural cut points, and content type transitions. Scene changes = natural cut points; low-motion = likely screen content (keep intact). Then for each segment:
 
 **Phase 1 — Score every segment:**
 - Score 1-10 on editorial quality (hook potential, information density, emotional resonance, delivery)
@@ -60,6 +107,35 @@ For each cut spec, select the best segments that fit the duration range and edit
 - Pick a `mood` from the spec's `mood_options` based on the emotional arc of the segments you selected (drive=confident/upbeat, tension=urgent/dramatic, steady=calm/background)
 - List dropped segments with reasons for any scored 5+ that weren't included
 - Write to `{job_dir}/cut_plans/{spec_name}.json`
+
+**Phase 3 — Plan visual effects per cut:**
+After creating each cut plan, determine visual effects for segments within the cut. Write a `visual_effects[]` array into the cut plan JSON. Each effect has: `effect_type`, `start`, `end` (times relative to the assembled clip, not the source), and type-specific fields.
+
+**Zoom effects** (Ken Burns via animated crop+scale):
+- Trigger: `zoom_candidate` is set in a frame description that falls within a selected segment
+- Map the frame's `region_of_interest` to FFmpeg coordinates using the ROI table:
+
+| ROI description | zoom_target_x | zoom_target_y |
+|----------------|---------------|---------------|
+| "right panel/side" | `iw*2/3` | `ih/2` |
+| "left panel/side" | `iw/3` | `ih/2` |
+| "center" | `iw/2` | `ih/2` |
+| "top/header" | `iw/2` | `ih/4` |
+| "bottom" | `iw/2` | `ih*3/4` |
+
+- `zoom_factor`: 1.3 (gentle), max 10s duration per zoom
+- Never apply zoom on hook clips
+
+**Text overlay effects** (drawtext):
+- Trigger: `overlay_opportunity == true` in a frame AND cut plan has narration or a key quote
+- Use the narration sentence or a short stat/quote as `overlay_text`
+- Position: lower third, white text, black border
+- Never apply on hook clips
+
+**Rules:**
+- Max 3 effects per cut
+- Never overlap a zoom and text on the same time range
+- If no effects are appropriate, leave `visual_effects` as an empty array
 
 ### 4. Cut segments (FFmpeg — stream copy, no re-encoding)
 For each cut plan:
@@ -91,11 +167,26 @@ ffmpeg -y -i scaled.mp4 -i {music_file} \
   -map 0:v -map "[aout]" -c:v copy -c:a aac -b:a 192k {clip_dir}/with_music.mp4
 ```
 
-### 6. Apply watermark
+### 6. Apply watermark + visual effects
 - Use the watermark from the spec file's `branding.watermark` field
 - Read position from `branding.watermark_16x9` or `branding.watermark_9x16` based on aspect ratio
 - Each has: `scale`, `opacity`, `x`, `y` (ffmpeg overlay expressions)
-- Re-encodes video with h264_nvmpi (filter needed), copies audio:
+- Load `visual_effects[]` from the cut plan for this clip
+
+**When visual effects exist** — merge zoom/text into the watermark re-encode (single h264_nvmpi pass):
+```bash
+ffmpeg -y -i with_music.mp4 -i {watermark} \
+  -filter_complex "
+    [0:v]crop=w='if(between(t,{z_start},{z_end}),iw-(iw-iw/{zf})*(t-{z_start})/({z_end}-{z_start}),iw)':h='...':x='...':y='...',
+    scale=1920:1080,
+    drawtext=text='{text}':enable='between(t,{t_start},{t_end})':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=48:fontcolor=white:borderw=2:bordercolor=black:x=(w-text_w)/2:y=h-text_h-100[main];
+    [1:v]scale=iw*{scale}:-1,format=rgba,colorchannelmixer=aa={opacity}[wm];
+    [main][wm]overlay={x}:{y}
+  " \
+  -c:v h264_nvmpi -c:a copy {clip_dir}/watermarked.mp4
+```
+
+**When no effects** — watermark only (unchanged):
 ```bash
 ffmpeg -y -i with_music.mp4 -i {watermark} \
   -filter_complex "[1:v]scale=iw*{scale}:-1,format=rgba,colorchannelmixer=aa={opacity}[wm];[0:v][wm]overlay={x}:{y}" \

@@ -1,0 +1,84 @@
+{
+  "generated": "2026-03-19",
+  "total_sources": 68,
+  "chapters": {
+    "01-retention-editing": [
+      {"source": "MrBeast leaked 36-page production guide", "url": "https://simonwillison.net/2024/Sep/15/how-to-succeed-in-mrbeast-production/", "used_for": "Video segment structure, cut frequency, three success metrics"},
+      {"source": "ProTunesOne MrBeast analysis", "url": "https://protunesone.com/blog/leaked-mrbeast-document-on-his-youtube-strategies/", "used_for": "Production rules, wow factor"},
+      {"source": "Tubefilter - MrBeast editing style", "url": "https://www.tubefilter.com/2024/03/04/mrbeast-editing-style-number-of-cuts-per-video/", "used_for": "Cut frequency evolution 38→23 cuts/min"},
+      {"source": "AIR Media-Tech retention editing", "url": "https://air.io/en/youtube-hacks/advanced-retention-editing-cutting-patterns-that-keep-viewers-past-minute-8", "used_for": "Progressive cut widening, burst-calm cycles, pacing arc"},
+      {"source": "StudioBinder - Murch Rule of Six", "url": "https://www.studiobinder.com/blog/walter-murch-rule-of-six/", "used_for": "Priority weights, blink theory"},
+      {"source": "No Film School - Murch Rule of Six", "url": "https://nofilmschool.com/2016/11/6-rules-good-cutting-according-oscar-winning-editor-walter-murch", "used_for": "Rule of Six details"},
+      {"source": "Mike Battle - Blink of an Eye notes", "url": "https://www.mikebattle.com/book-notes/in-the-blink-of-an-eye", "used_for": "Core principles, cuts per minute benchmarks"},
+      {"source": "Musicbed - Hayden Hillier-Smith", "url": "https://www.musicbed.com/articles/filmmaking/masterminding-viral-edits-with-hayden-hillier-smith/", "used_for": "Storyshowing, 2+2 principle, anti-retention-hacking"},
+      {"source": "Ali Abdaal HIVE framework", "url": "https://x.com/AliAbdaal/status/1499083172843302913", "used_for": "HIVE structure"},
+      {"source": "Colin & Samir Playbook", "url": "https://www.colinandsamir.com/playbook", "used_for": "Hook-Hold-Payoff, 72% longer watch times"},
+      {"source": "Artlist - J-cut vs L-cut", "url": "https://artlist.io/blog/j-cut-vs-l-cut/", "used_for": "Audio offset cut timing"},
+      {"source": "OpusClip retention graphs", "url": "https://www.opus.pro/blog/youtube-retention-graphs-explained", "used_for": "Retention curve patterns"},
+      {"source": "Retention Rabbit", "url": "https://www.retentionrabbit.com/blog/ultimate-guide-youtube-audience-retention", "used_for": "Retention thresholds, hook structure"},
+      {"source": "2Bridges Productions", "url": "https://www.2bridges.nyc/nycblog/how-to-spice-up-videos-with-pattern-interrupts", "used_for": "Pattern interrupt timing and types"},
+      {"source": "Paddy Galloway - Creator Science", "url": "https://podcast.creatorscience.com/paddy-galloway-2/", "used_for": "Retention danger zones, curiosity loops"}
+    ],
+    "02-hook-extraction": [
+      {"source": "Retention Rabbit hook strategies", "url": "https://www.retentionrabbit.com/blog/youtube-hook-strategy-to-keep-viewers-watching", "used_for": "Hook patterns, 33% drop-off stat"},
+      {"source": "OpusClip Shorts hook formulas", "url": "https://www.opus.pro/blog/youtube-shorts-hook-formulas", "used_for": "Seven hook templates, short-form hooks"},
+      {"source": "Brandefy - Psychology of viral openers", "url": "https://brandefy.com/psychology-of-viral-video-openers/", "used_for": "Information gap, pattern interrupt timing"},
+      {"source": "MrBeast leaked doc (Daniel Scrivner)", "url": "https://www.danielscrivner.com/how-to-succeed-in-mrbeast-production-summary/", "used_for": "3-8 second premise delivery"},
+      {"source": "Stash LM YouTube Hook Grader", "url": "https://stashlm.com/tools/youtube-hook-grader/", "used_for": "Five-factor scoring rubric"},
+      {"source": "PlayPlay - Video hooks", "url": "https://playplay.com/blog/video-hooks/", "used_for": "Hook template taxonomy"},
+      {"source": "Descript - Cold opens", "url": "https://www.descript.com/blog/article/how-to-write-a-cold-open-that-will-hook-listeners-from-the-start", "used_for": "Cold open extraction workflow"},
+      {"source": "Project Aeon - Text overlays", "url": "https://project-aeon.com/blogs/text-overlay-on-video-master-engaging-techniques", "used_for": "Overlay text timing and placement"},
+      {"source": "Animoto - First 3 seconds", "url": "https://animoto.com/blog/video-marketing/why-first-3-seconds-matter", "used_for": "3-second rule for short-form"}
+    ],
+    "03-multi-format-cutting": [
+      {"source": "GaryVee Content Strategy", "url": "https://garyvaynerchuk.com/the-garyvee-content-strategy-how-to-grow-and-distribute-your-brands-social-media-content/", "used_for": "Reverse pyramid, pillar-to-micro pipeline"},
+      {"source": "Orson Lord safe zone overlays", "url": "https://orsonlord.com/articles/free-safe-zone-overlays-for-reels-tiktok-and-shorts", "used_for": "Per-platform pixel-exact safe zones"},
+      {"source": "Kreatli safe zone guide", "url": "https://kreatli.com/guides/safe-zone-guide", "used_for": "Safe zone measurements"},
+      {"source": "Dan Mears vertical video", "url": "https://danmears.tv/vertical-video/", "used_for": "16:9 to 9:16 crop strategy"},
+      {"source": "OpusClip short-form strategy 2026", "url": "https://www.opus.pro/blog/short-form-video-strategy-2026", "used_for": "Platform-specific adaptation"},
+      {"source": "Shortimize video length data", "url": "https://www.shortimize.com/blog/video-length-sweet-spots-tiktok-reels-shorts", "used_for": "Duration sweet spots per platform"},
+      {"source": "Kapwing social media sizes 2026", "url": "https://www.kapwing.com/resources/social-media-video-aspect-ratios-and-sizes-the-2025-guide/", "used_for": "Resolution and aspect ratio specs"},
+      {"source": "Beverly Boy - Shooting for square", "url": "https://beverlyboy.com/film-technology/shooting-for-square-platform-specific-framing-on-multi-cam-rigs/", "used_for": "1920x1920 square master concept"}
+    ],
+    "04-attention-psychology": [
+      {"source": "Google/Ipsos eye-tracking study", "url": "https://www.ipsos.com/en-us/news-polls/google-ipsos-advertising-attention-research", "used_for": "62% mobile attention stat, face dominance"},
+      {"source": "ARVO looming motion", "url": "https://jov.arvojournals.org/article.aspx?articleid=2131301", "used_for": "200ms attention capture, expanding motion"},
+      {"source": "Effectiviology - Von Restorff", "url": "https://effectiviology.com/von-restorff-isolation-effect/", "used_for": "Isolation effect rules"},
+      {"source": "Edit Blindness study", "url": "https://www.mdpi.com/1995-8692/2/2/11", "used_for": "25-33% of cuts go unnoticed"},
+      {"source": "Mayer's Multimedia Learning (UCSD)", "url": "https://multimedia.ucsd.edu/best-practices/multimedia-learning.html", "used_for": "Cognitive load principles"},
+      {"source": "NN/g Peak-End Rule", "url": "https://www.nngroup.com/articles/peak-end-rule/", "used_for": "Peak-end rule, duration neglect"},
+      {"source": "UChicago emotional memory study", "url": "https://psychology.uchicago.edu/news/new-research-explores-what-makes-emotional-memories-stick", "used_for": "Whole-brain integration during arousal"},
+      {"source": "Speakwise attention span stats", "url": "https://speakwiseapp.com/blog/attention-span-statistics", "used_for": "47-second average, myth debunking"},
+      {"source": "Noam Kroll color grading psychology", "url": "https://noamkroll.com/the-psychology-of-color-grading-its-emotional-impact-on-your-audience/", "used_for": "Color-mood mapping"},
+      {"source": "NeuroMarketing pattern interrupts", "url": "https://blog.neuromarket.co/pattern-interruption-the-science-of-stopping-scrollers-in-their-tracks", "used_for": "RAS, dopamine prediction error"}
+    ],
+    "05-music-mood-sync": [
+      {"source": "AIR Media-Tech retention editing", "url": "https://air.io/en/youtube-hacks/advanced-retention-editing-cutting-patterns-that-keep-viewers-past-minute-8", "used_for": "Music volume levels, BPM guidelines"},
+      {"source": "W3C audio accessibility", "url": "https://www.w3.org/WAI/media/av/", "used_for": "-20dB speech/music separation standard"},
+      {"source": "BBC subtitling guidelines", "url": "https://www.clevercast.com/bbc-subtitling-guidelines/", "used_for": "Audio level benchmarks"},
+      {"source": "EBU R128 standard", "url": "https://tech.ebu.ch/publications/r128", "used_for": "-14 LUFS target"},
+      {"source": "Sweetwater YouTube audio mastering", "url": "https://www.sweetwater.com/insync/how-to-master-audio-for-youtube/", "used_for": "Voice-to-music ratio"},
+      {"source": "Musicbed - Hayden Hillier-Smith", "url": "https://www.musicbed.com/articles/filmmaking/masterminding-viral-edits-with-hayden-hillier-smith/", "used_for": "Music as foundation, not supplement"}
+    ],
+    "06-visual-storytelling": [
+      {"source": "PremiumBeat B-Roll guide", "url": "https://www.premiumbeat.com/blog/b-roll-video-edit-guide/", "used_for": "B-roll timing and selection"},
+      {"source": "Riverside lower thirds", "url": "https://riverside.fm/blog/lower-thirds", "used_for": "Lower third design and timing"},
+      {"source": "Netflix subtitle timing", "url": "https://partnerhelp.netflixstudios.com/hc/en-us/articles/360051554394-Timed-Text-Style-Guide-Subtitle-Timing-Guidelines", "used_for": "17 chars/sec reading speed, 6-second rule"},
+      {"source": "StudioBinder editing transitions", "url": "https://www.studiobinder.com/blog/types-of-editing-transitions-in-film/", "used_for": "Transition type taxonomy"},
+      {"source": "TechSmith Camtasia zoom", "url": "https://www.techsmith.com/learn/tutorials/camtasia/animations/", "used_for": "Screen recording zoom techniques"},
+      {"source": "VideoHero MrBeast editing", "url": "https://www.videohero.com/blog/MrBeast-and-video-editing", "used_for": "Ken Burns zoom timing, burst sequences"},
+      {"source": "Backstage Ken Burns effect", "url": "https://www.backstage.com/magazine/article/ken-burns-effect-12862/", "used_for": "Zoom speed and target rules"},
+      {"source": "Motion Edits pacing", "url": "https://www.motionedits.com/the-art-of-pacing-how-we-edit-for-maximum-engagement/", "used_for": "Visual metronome concept, oscillation principle"}
+    ],
+    "07-content-evaluation": [
+      {"source": "Retention Rabbit 2025 benchmark", "url": "https://www.retentionrabbit.com/blog/2025-youtube-audience-retention-benchmark-report", "used_for": "23.7% average retention, 16.8% exceed 50%"},
+      {"source": "UW Stout video rubric", "url": "https://www2.uwstout.edu/content/profdev/rubrics/videorubric.html", "used_for": "Quality rubric framework"},
+      {"source": "Sightengine image quality", "url": "https://sightengine.com/docs/image-quality-detection", "used_for": "Thumbnail sharpness detection"},
+      {"source": "MediaMachine thumbnail science", "url": "https://mediamachine.io/blog/art-and-science-of-a-great-video-thumbnail/", "used_for": "Thumbnail scoring criteria"},
+      {"source": "Descript publishing checklist", "url": "https://www.descript.com/blog/article/the-ultimate-youtube-publishing-checklist-to-maximize-views", "used_for": "Pre-publish quality gate"},
+      {"source": "Paddy Galloway evaluation", "url": "https://www.marketingexamined.com/blog/paddy-galloway-youtube-guide", "used_for": "Four evaluation pillars, title criteria"},
+      {"source": "This Girl Edits mistakes", "url": "https://thisgirledits.com/mistakes-creators-make-when-editing-youtube-videos/", "used_for": "Common editing mistakes"},
+      {"source": "Epidemic Sound mistakes", "url": "https://www.epidemicsound.com/blog/worst-video-editing-mistakes/", "used_for": "Audio as #1 quality signal"}
+    ]
+  }
+}

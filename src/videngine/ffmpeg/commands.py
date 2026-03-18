@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from ..config import EncodingConfig
+from ..models import VisualEffect
 from .filters import watermark_overlay
+
+# Font path for text overlays (DejaVu Sans Bold — confirmed present on Jetson)
+_FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 
 def _video_encode_args(encoding: EncodingConfig) -> list[str]:
@@ -144,10 +148,15 @@ def loudnorm_apply(
 
 def detect_scenes(
     input_path: str,
-    threshold: float = 0.3,
+    scores_path: str,
+    threshold: float = 0.05,
 ) -> list[str]:
-    """Detect scene changes using select filter + showinfo (decode only, no output)."""
-    vf = f"select='gt(scene,{threshold})',showinfo"
+    """Detect scene changes using select filter + metadata=print for scores.
+
+    Uses a low threshold (0.05) to capture subtle screen recording transitions.
+    Post-filtering at 0.08+ with dedup is done in the parsing stage.
+    """
+    vf = f"select='gt(scene,{threshold})',metadata=print:file={scores_path}"
     return [
         "ffmpeg", "-y",
         "-i", input_path,
@@ -257,5 +266,141 @@ def center_crop(
         "-vf", vf,
         *_video_encode_args(encoding),
         *_audio_encode_args(encoding),
+        output_path,
+    ]
+
+
+def _escape_drawtext(text: str) -> str:
+    """Escape special characters for FFmpeg drawtext filter."""
+    # Order matters: backslash first, then the rest
+    text = text.replace("\\", "\\\\")
+    text = text.replace("'", "\\'")
+    text = text.replace(":", "\\:")
+    text = text.replace(";", "\\;")
+    return text
+
+
+def _build_zoompan(effect: VisualEffect, fps: int = 60) -> str:
+    """Build a zoompan filter for a Ken Burns zoom effect within a time window.
+
+    Uses zoompan with d=1 (one output per input frame) so it acts as a
+    per-frame crop+scale. Outside the effect window, zoom=1 (no zoom).
+    During the effect, zoom ramps from 1.0 to zoom_factor.
+
+    The zoompan filter uses 'on' (output frame number) for expressions.
+    We convert time-based start/end to frame numbers using the given fps.
+    """
+    zf = effect.zoom_factor
+    zx, zy = effect.zoom_target_x, effect.zoom_target_y
+
+    # Convert time to frame numbers
+    f_start = int(effect.start * fps)
+    f_end = int(effect.end * fps)
+    f_dur = f_end - f_start
+
+    # z: zoom level. 1.0 outside window, ramps 1.0→zf during window, holds zf after
+    # progress = (on - f_start) / f_dur, clamped 0→1
+    z_expr = (
+        f"if(lt(on,{f_start}),1,"
+        f"if(lt(on,{f_end}),1+{zf - 1}*(on-{f_start})/{f_dur},"
+        f"1))"
+    )
+
+    # x/y: pan toward target as zoom increases
+    # zoompan x/y are in input pixel coordinates (top-left of the crop window)
+    # Default center: x = iw/2 - iw/zoom/2, y = ih/2 - ih/zoom/2
+    # Target: x = target_x - iw/zoom/2, y = target_y - ih/zoom/2
+    # Lerp from center to target using same progress
+    x_center = "iw/2-iw/zoom/2"
+    y_center = "ih/2-ih/zoom/2"
+    x_target = f"({zx})-iw/zoom/2"
+    y_target = f"({zy})-ih/zoom/2"
+
+    x_expr = (
+        f"if(lt(on,{f_start}),{x_center},"
+        f"if(lt(on,{f_end}),"
+        f"{x_center}+({x_target}-({x_center}))*(on-{f_start})/{f_dur},"
+        f"{x_center}))"
+    )
+    y_expr = (
+        f"if(lt(on,{f_start}),{y_center},"
+        f"if(lt(on,{f_end}),"
+        f"{y_center}+({y_target}-({y_center}))*(on-{f_start})/{f_dur},"
+        f"{y_center}))"
+    )
+
+    return (
+        f"zoompan=z='{z_expr}'"
+        f":x='{x_expr}'"
+        f":y='{y_expr}'"
+        f":d=1:s=1920x1080:fps={fps}"
+    )
+
+
+def _build_drawtext(effect: VisualEffect) -> str:
+    """Build a drawtext filter string for a text overlay effect."""
+    text = _escape_drawtext(effect.overlay_text)
+    return (
+        f"drawtext=text='{text}'"
+        f":enable='between(t,{effect.start},{effect.end})'"
+        f":fontfile={_FONT_PATH}"
+        f":fontsize=48"
+        f":fontcolor=white"
+        f":borderw=2:bordercolor=black"
+        f":x=(w-text_w)/2:y=h-text_h-100"
+    )
+
+
+def apply_watermark_with_effects(
+    input_path: str,
+    watermark_path: str,
+    output_path: str,
+    encoding: EncodingConfig,
+    effects: list[VisualEffect],
+    scale: float = 0.40,
+    opacity: float = 0.9,
+    x: str = "W-w-65",
+    y: str = "H-h-40",
+) -> list[str]:
+    """Apply watermark + visual effects (zoom, text overlays) in a single re-encode.
+
+    Combines crop (zoom), drawtext (text), scale, and watermark overlay into one
+    filter_complex so we only encode once with h264_nvmpi.
+    """
+    # Separate effects by type
+    zooms = [e for e in effects if e.effect_type == "zoom"]
+    texts = [e for e in effects if e.effect_type == "text_overlay"]
+
+    # Build video filter chain on [0:v]
+    video_filters: list[str] = []
+
+    if zooms:
+        # zoompan handles zoom + scale to 1920x1080 in one step
+        # Only first zoom is used (zoompan is a single-instance filter)
+        video_filters.append(_build_zoompan(zooms[0]))
+    else:
+        # No zoom — just scale to 1920x1080
+        video_filters.append("scale=1920:1080")
+
+    # Add text overlays (drawtext uses 't' which works correctly)
+    for text_effect in texts:
+        video_filters.append(_build_drawtext(text_effect))
+
+    video_chain = ",".join(video_filters)
+
+    filter_graph = (
+        f"[0:v]{video_chain}[main];"
+        f"[1:v]scale=iw*{scale}:-1,format=rgba,"
+        f"colorchannelmixer=aa={opacity}[wm];"
+        f"[main][wm]overlay={x}:{y}"
+    )
+
+    return [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-i", watermark_path,
+        "-filter_complex", filter_graph,
+        *_video_encode_args(encoding),
+        "-c:a", "copy",
         output_path,
     ]

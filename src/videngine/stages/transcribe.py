@@ -101,20 +101,26 @@ def _ts_to_seconds(ms: int) -> float:
     return ms / 1000.0
 
 
-def run_visual_analysis(source_file: str, working_dir: str) -> VisualContext:
+def run_visual_analysis(
+    source_file: str,
+    working_dir: str,
+    score_threshold: float = 0.08,
+    dedup_window: float = 2.0,
+    frame_interval: float = 30.0,
+) -> VisualContext:
     """Run scene change detection on the source video and build visual context."""
     work = Path(working_dir)
     info = probe(source_file)
     duration = info.duration
 
-    # Run scene detection
-    cmd = detect_scenes(source_file)
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    # detect_scenes returns non-zero when frames are filtered out; stderr has the data
-    stderr = result.stderr
+    # Run scene detection (low threshold to capture subtle transitions)
+    scores_path = str(work / "scene_scores.txt")
+    cmd = detect_scenes(source_file, scores_path)
+    subprocess.run(cmd, capture_output=True, text=True)
 
-    # Parse showinfo lines for pts_time and scene score
-    scene_changes = _parse_scene_changes(stderr)
+    # Parse scores file and post-filter
+    raw_changes = _parse_scene_scores(scores_path)
+    scene_changes = _filter_and_dedup(raw_changes, score_threshold, dedup_window)
 
     # Build visual segments from gaps between scene changes
     visual_segments = _build_visual_segments(scene_changes, duration)
@@ -122,6 +128,7 @@ def run_visual_analysis(source_file: str, working_dir: str) -> VisualContext:
     context = VisualContext(
         source_file=source_file,
         duration_seconds=duration,
+        frame_interval=frame_interval,
         scene_changes=scene_changes,
         visual_segments=visual_segments,
         total_scene_changes=len(scene_changes),
@@ -136,32 +143,46 @@ def run_visual_analysis(source_file: str, working_dir: str) -> VisualContext:
     return context
 
 
-def _parse_scene_changes(stderr: str) -> list[SceneChange]:
-    """Parse FFmpeg showinfo output for scene change timestamps and scores."""
+def _parse_scene_scores(scores_path: str) -> list[SceneChange]:
+    """Parse metadata=print output file for pts_time and scene_score pairs."""
     changes: list[SceneChange] = []
-    # showinfo outputs lines like: [Parsed_showinfo_1 ...] n:... pts:... pts_time:12.345 ...
-    # select filter outputs: [Parsed_select_0 ...] select:1.000000 t:12.345 ...
-    # We look for pts_time in showinfo lines
-    pts_pattern = re.compile(r"pts_time:\s*([\d.]+)")
-    # Scene score comes from the select filter's metadata or we infer from density
-    # FFmpeg select='gt(scene,T)' + showinfo: the showinfo line appears for each selected frame
-    # The scene score isn't directly in showinfo, but we can extract it from lavfi.scene_score
-    score_pattern = re.compile(r"lavfi\.scene_score\s*=\s*([\d.]+)")
+    pts_pattern = re.compile(r"pts_time:([\d.]+)")
+    score_pattern = re.compile(r"lavfi\.scene_score=([\d.]+)")
 
-    lines = stderr.split("\n")
-    current_pts = None
-    for line in lines:
-        pts_match = pts_pattern.search(line)
-        if pts_match and "showinfo" in line.lower():
-            current_pts = float(pts_match.group(1))
-            # Default score since showinfo doesn't always include it
-            changes.append(SceneChange(timestamp=current_pts, score=0.5))
+    try:
+        with open(scores_path) as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        return changes
 
-        score_match = score_pattern.search(line)
-        if score_match and changes:
-            changes[-1].score = float(score_match.group(1))
+    i = 0
+    while i < len(lines) - 1:
+        pts_match = pts_pattern.search(lines[i])
+        score_match = score_pattern.search(lines[i + 1])
+        if pts_match and score_match:
+            changes.append(SceneChange(
+                timestamp=float(pts_match.group(1)),
+                score=float(score_match.group(1)),
+            ))
+        i += 2
 
     return changes
+
+
+def _filter_and_dedup(
+    changes: list[SceneChange],
+    score_threshold: float,
+    dedup_window: float,
+) -> list[SceneChange]:
+    """Apply score threshold and deduplicate nearby changes."""
+    filtered = [c for c in changes if c.score >= score_threshold]
+    deduped: list[SceneChange] = []
+    for c in filtered:
+        if not deduped or c.timestamp - deduped[-1].timestamp > dedup_window:
+            deduped.append(c)
+        elif c.score > deduped[-1].score:
+            deduped[-1] = c
+    return deduped
 
 
 def _build_visual_segments(

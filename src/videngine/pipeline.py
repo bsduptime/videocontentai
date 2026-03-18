@@ -223,8 +223,14 @@ class Pipeline:
         run_transcribe(
             self.job.source_file, self.job.working_dir, self.config
         )
+
+        # Adaptive frame interval based on source format
+        frame_interval, dedup_window = self._get_frame_sampling_params()
+
         run_visual_analysis(
             self.job.source_file, self.job.working_dir,
+            dedup_window=dedup_window,
+            frame_interval=frame_interval,
         )
         self.job.stages["transcribe"].artifacts = {
             "transcript": "transcript.json",
@@ -263,8 +269,10 @@ class Pipeline:
         from .stages.watermark import run_watermark
 
         clip_paths = self._get_clip_paths("cut", "raw.mp4")
+        cut_plans = self._load_cut_plans()
         watermarked = run_watermark(
-            clip_paths, self.job.working_dir, self.config, branding=self.branding,
+            clip_paths, self.job.working_dir, self.config,
+            branding=self.branding, cut_plans=cut_plans,
         )
         self.job.stages["watermark"].artifacts = {
             name: f"clips/{name}/watermarked.mp4" for name in watermarked
@@ -296,6 +304,19 @@ class Pipeline:
         }
 
     # --- Helpers ---
+
+    def _get_frame_sampling_params(self) -> tuple[float, float]:
+        """Determine frame interval and dedup window from source.format.
+
+        Returns (frame_interval, dedup_window) in seconds.
+        """
+        source_format = self.source_context.format.lower()
+        if "screen" in source_format:
+            return 10.0, 1.5
+        elif "talking" in source_format:
+            return 30.0, 2.0
+        else:
+            return 15.0, 2.0
 
     def _load_transcript(self) -> Transcript:
         path = Path(self.job.working_dir) / "transcript.json"
