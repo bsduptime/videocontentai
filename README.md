@@ -70,6 +70,31 @@ uv pip install nvidia-cudss-cu12
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
+## Content Production Pipeline
+
+For the David K content pipeline, videngine handles post-production:
+
+```bash
+# Step 1-3: Ingest + audio preprocessing + transcription (mechanical)
+videngine pre-process {slug}
+
+# Step 5-7: Cut beats + re-transcribe + VAD/emotion scoring (mechanical)
+videngine cut-beats {slug}
+
+# Full pipeline with agent (scene matching + readiness report):
+# Use /check-readiness {slug} in Claude Code
+```
+
+**Directory structure:**
+```
+video-content/
+  input/{slug}/        ← drop raw files + script + sidecar here
+  production/{slug}/   ← processing workspace (wiped on each run)
+  output/{slug}/       ← finished exports
+```
+
+See `.claude/commands/check-readiness.md` for the full agent-orchestrated pipeline.
+
 ## Usage
 
 ```bash
