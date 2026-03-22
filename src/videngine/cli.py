@@ -329,6 +329,176 @@ def pre_process(
     console.print(f"  Manifest:   {manifest_path}")
 
 
+@app.command(name="cut-beats")
+def cut_beats(
+    slug: Annotated[str, typer.Argument(help="Video slug (directory name in video-content/production/)")],
+    config_file: Annotated[
+        Optional[Path], typer.Option("--config", help="Path to config TOML file")
+    ] = None,
+) -> None:
+    """Cut beat files, re-transcribe, and run VAD + emotion2vec scoring.
+
+    Expects scene matching to be complete: production/{slug}/beats/ must contain
+    a beat_map.json (produced by the scene-matching agent step).
+
+    Steps:
+    5. Cut each beat from source files by timecodes in beat_map.json
+    6. Re-transcribe each cut beat with Whisper (fresh timecodes)
+    7. Run VAD + emotion2vec analysis on each beat
+    """
+    import json
+    import re
+    import subprocess
+    from datetime import datetime
+
+    config = load_config(config_file)
+
+    prod_dir = IN_PROGRESS_DIR / slug
+    beats_dir = prod_dir / "beats"
+    beat_map_path = beats_dir / "beat_map.json"
+
+    # --- Validate ---
+    if not prod_dir.exists():
+        console.print(f"[red]Production directory not found: {prod_dir}[/red]")
+        raise typer.Exit(1)
+
+    if not beat_map_path.exists():
+        console.print(f"[red]beat_map.json not found — run scene matching first[/red]")
+        raise typer.Exit(1)
+
+    beat_map = json.loads(beat_map_path.read_text())
+    console.print(f"\n[bold]Cutting beats for: {slug}[/bold]")
+    console.print(f"  Beats in map: {len(beat_map)}")
+
+    # --- Step 5: Cut beats ---
+    console.print(f"\n[bold]Step 5: Cutting beats...[/bold]")
+
+    from .ffmpeg.commands import cut_segment
+
+    cut_files: list[dict] = []
+    for entry in beat_map:
+        beat_num = entry["beat"]
+        beat_name = entry.get("name", f"beat-{beat_num}")
+        source_file = entry["source_file"]
+        takes = entry.get("takes", [{"start": entry["start"], "end": entry["end"]}])
+
+        for take_idx, take in enumerate(takes, 1):
+            out_name = f"beat-{beat_num:02d}-{beat_name}-take-{take_idx}.mp4"
+            out_path = str(beats_dir / out_name)
+
+            cmd = cut_segment(source_file, out_path, take["start"], take["end"])
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                console.print(f"  [red]Failed to cut {out_name}: {result.stderr[-200:]}[/red]")
+                continue
+
+            duration = take["end"] - take["start"]
+            console.print(f"  [green]✅ {out_name}[/green] ({duration:.1f}s)")
+            cut_files.append({
+                "beat": beat_num,
+                "name": beat_name,
+                "take": take_idx,
+                "file": out_name,
+                "path": out_path,
+                "duration": duration,
+            })
+
+    # --- Step 6: Re-transcribe each beat ---
+    console.print(f"\n[bold]Step 6: Transcribing beats...[/bold]")
+
+    from .stages.transcribe import run_transcribe
+
+    for cf in cut_files:
+        transcript_dir = str(beats_dir / f"{Path(cf['file']).stem}")
+        Path(transcript_dir).mkdir(parents=True, exist_ok=True)
+
+        transcript = run_transcribe(cf["path"], transcript_dir, config)
+        word_count = sum(len(seg.words) for seg in transcript.segments)
+        cf["words"] = word_count
+        cf["transcript_path"] = f"{Path(cf['file']).stem}/transcript.json"
+        console.print(f"  [green]✅ {cf['file']}[/green]: {word_count} words")
+
+    # --- Step 7: VAD + emotion2vec ---
+    console.print(f"\n[bold]Step 7: VAD + emotion2vec scoring...[/bold]")
+
+    # Run VAD analysis via the standalone script (loads model once for all files)
+    beat_paths = [cf["path"] for cf in cut_files]
+
+    console.print(f"  Running VAD analysis on {len(beat_paths)} files...")
+    vad_result = subprocess.run(
+        ["python", "scripts/vad_analyze.py"] + beat_paths,
+        capture_output=True, text=True, cwd=str(Path(__file__).parent.parent.parent),
+    )
+    if vad_result.returncode != 0:
+        console.print(f"  [red]VAD analysis failed: {vad_result.stderr[-300:]}[/red]")
+        raise typer.Exit(1)
+
+    # Load VAD results
+    vad_json_path = beats_dir / "vad_analysis.json"
+    if vad_json_path.exists():
+        vad_results = json.loads(vad_json_path.read_text())
+        for cf, vad in zip(cut_files, vad_results):
+            cf["vad"] = vad.get("overall", {})
+            cf["vad_windows"] = vad.get("windows", [])
+            o = cf["vad"]
+            console.print(
+                f"  [green]✅ {cf['file']}[/green]: "
+                f"{o.get('energy_mode', '?')} "
+                f"(A={o.get('arousal', 0):.3f} V={o.get('valence', 0):.3f} D={o.get('dominance', 0):.3f})"
+            )
+
+    console.print(f"\n  Running emotion2vec analysis on {len(beat_paths)} files...")
+    emo_result = subprocess.run(
+        ["python", "scripts/emotion2vec_analyze.py"] + beat_paths,
+        capture_output=True, text=True, cwd=str(Path(__file__).parent.parent.parent),
+    )
+    if emo_result.returncode != 0:
+        console.print(f"  [red]emotion2vec analysis failed: {emo_result.stderr[-300:]}[/red]")
+        raise typer.Exit(1)
+
+    # Load emotion2vec results
+    emo_json_path = beats_dir / "emotion2vec_analysis.json"
+    if emo_json_path.exists():
+        emo_results = json.loads(emo_json_path.read_text())
+        for cf, emo in zip(cut_files, emo_results):
+            cf["emotion"] = emo.get("overall", {})
+            e = cf["emotion"]
+            console.print(
+                f"  [green]✅ {cf['file']}[/green]: "
+                f"{e.get('top_emotion', '?')} ({e.get('confidence', 0):.0%})"
+            )
+
+    # --- Save beat analysis summary ---
+    analysis_path = beats_dir / "beat_analysis.json"
+    analysis_path.write_text(json.dumps(cut_files, indent=2, default=str))
+
+    # --- Update manifest ---
+    console.print(f"\n[bold]Updating manifest...[/bold]")
+    manifest_path = prod_dir / "manifest.md"
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    if manifest_path.exists():
+        manifest = manifest_path.read_text()
+        manifest = manifest.replace("- [ ] Beat cuts", f"- [x] Beat cuts ✅ {now}", 1)
+        manifest = manifest.replace("- [ ] Beat transcription", f"- [x] Beat transcription ✅ {now}", 1)
+        manifest = manifest.replace("- [ ] VAD scoring", f"- [x] VAD scoring ✅ {now}", 1)
+        manifest_path.write_text(manifest)
+
+    # --- Summary ---
+    console.print(f"\n[bold green]{'═' * 50}[/bold green]")
+    console.print(f"[bold]Beat Processing Complete: {slug}[/bold]\n")
+    console.print(f"  Beats cut: {len(cut_files)}")
+    console.print(f"  All transcribed: ✅")
+    console.print(f"  All VAD scored: ✅")
+    console.print(f"  All emotion scored: ✅")
+    console.print(f"\n  Pipeline status:")
+    console.print(f"  [green]✅ Beat cuts[/green]")
+    console.print(f"  [green]✅ Beat transcription[/green]")
+    console.print(f"  [green]✅ VAD + emotion2vec scoring[/green]")
+    console.print(f"  [dim]⬜ Delivery comparison + readiness (next: agent)[/dim]")
+    console.print(f"\n  Beat analysis: {analysis_path}")
+
+
 @app.command()
 def cut(
     brand: Annotated[
