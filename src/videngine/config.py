@@ -57,6 +57,37 @@ class VideoConfig:
 
 
 @dataclass
+class AudioProfileConfig:
+    denoise_atten_lim_db: float = 0.0  # 0 = unlimited
+    compress_threshold_db: float = -20.0
+    compress_ratio: float = 3.0
+    compress_attack_ms: float = 5.0
+    compress_release_ms: float = 200.0
+    compress_knee_db: float = 6.0
+    compress_makeup_db: float = 2.0
+
+
+@dataclass
+class AudioConfig:
+    denoise: bool = True
+    profiles: dict[str, AudioProfileConfig] = field(default_factory=lambda: {
+        "macbook": AudioProfileConfig(),
+        "iphone": AudioProfileConfig(
+            compress_threshold_db=-18.0,
+            compress_ratio=1.5,
+            compress_attack_ms=10.0,
+            compress_release_ms=250.0,
+            compress_knee_db=8.0,
+            compress_makeup_db=1.0,
+        ),
+    })
+
+    def get_profile(self, name: str) -> AudioProfileConfig:
+        """Get a named profile, falling back to macbook defaults."""
+        return self.profiles.get(name, self.profiles["macbook"])
+
+
+@dataclass
 class EncodingConfig:
     codec: str = "h264_nvmpi"
     crf: int = 20  # only used by libx264 fallback
@@ -71,6 +102,7 @@ class Config:
     ai: AIConfig = field(default_factory=AIConfig)
     voice: VoiceConfig = field(default_factory=VoiceConfig)
     video: VideoConfig = field(default_factory=VideoConfig)
+    audio: AudioConfig = field(default_factory=AudioConfig)
     encoding: EncodingConfig = field(default_factory=EncodingConfig)
 
 
@@ -112,6 +144,17 @@ def load_config(config_path: str | Path | None = None) -> Config:
             for section_name, target in section_map.items():
                 if section_name in data:
                     _apply_section(target, data[section_name])
+
+            # Load audio config (has nested profiles)
+            if "audio" in data:
+                audio_data = data["audio"]
+                if "denoise" in audio_data:
+                    cfg.audio.denoise = audio_data["denoise"]
+                if "profiles" in audio_data:
+                    for name, profile_data in audio_data["profiles"].items():
+                        profile = AudioProfileConfig()
+                        _apply_section(profile, profile_data)
+                        cfg.audio.profiles[name] = profile
 
     # Env var overrides (VIDENGINE_AI_MODEL, VIDENGINE_WHISPER_LANGUAGE, etc.)
     prefix = "VIDENGINE_"

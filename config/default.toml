@@ -27,6 +27,29 @@ watermark_position = "bottom_right"
 watermark_opacity = 0.3
 watermark_scale = 0.08
 
+[audio]
+# Audio preprocessing profiles applied before loudness normalization.
+# Profile is selected by cut spec or auto-detected from source metadata.
+denoise = true                  # DeepFilterNet3 noise suppression
+
+[audio.profiles.macbook]
+denoise_atten_lim_db = 0        # 0 = unlimited denoise
+compress_threshold_db = -20.0
+compress_ratio = 3.0
+compress_attack_ms = 5.0
+compress_release_ms = 200.0
+compress_knee_db = 6.0
+compress_makeup_db = 2.0
+
+[audio.profiles.iphone]
+denoise_atten_lim_db = 0        # 0 = unlimited denoise
+compress_threshold_db = -18.0
+compress_ratio = 1.5
+compress_attack_ms = 10.0
+compress_release_ms = 250.0
+compress_knee_db = 8.0
+compress_makeup_db = 1.0
+
 [encoding]
 codec = "libx264"
 crf = 20

@@ -42,7 +42,7 @@ This skill is a **reference library** — load specific chapters as needed durin
 ## Integration Points
 
 ### Reads from pipeline
-- `config/cut_specs/moods.json` — mood definitions (drive/tension/steady), BPM, valence/arousal
+- `config/cut_specs/moods.json` — mood definitions (drive/steady), BPM, valence/arousal
 - `config/cut_specs/{orientation}-{brand}.json` — cut specs with editorial lens, duration ranges, mood options
 - `{job_dir}/transcript.json` — word-level timestamps from whisper
 - `{job_dir}/visual_context.json` — scene changes, frame descriptions, overlay/zoom candidates

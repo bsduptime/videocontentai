@@ -25,7 +25,7 @@
       "min_duration": 7,
       "max_duration": 15,
       "is_hook": true,
-      "mood_options": ["tension", "drive"],
+      "mood_options": ["silence", "drive"],
       "channels": ["YouTube Video"],
       "motion": "Stories / Opinion",
       "editorial_lens": "Extract the single most surprising or provocative moment — a stat, a failure, a hot take. Must hook in the first frame."
@@ -35,7 +35,7 @@
       "min_duration": 30,
       "max_duration": 60,
       "prepend_hook": true,
-      "mood_options": ["drive", "tension"],
+      "mood_options": ["drive", "silence"],
       "channels": ["LinkedIn Post", "YouTube Video", "X Post"],
       "motion": "Stories / Proof / Teaching",
       "editorial_lens": "Post-mortems, benchmarks, architecture decisions, tech demos, incident threads, TIL clips. Pick the single strongest result, before/after, or incident moment."

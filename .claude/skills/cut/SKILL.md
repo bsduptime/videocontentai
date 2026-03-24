@@ -1,18 +1,17 @@
 ---
 name: cut
-description: Process videos in source/to_cut/ through the multi-cut pipeline
+description: Process videos in video-content/input/ through the multi-cut pipeline
 disable-model-invocation: true
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
-Process all videos waiting in `source/to_cut/` through the multi-cut pipeline. You ARE the AI editor — do the analysis yourself, then run FFmpeg for the mechanical steps.
+Process all videos waiting in `video-content/input/` through the multi-cut pipeline. You ARE the AI editor — do the analysis yourself, then run FFmpeg for the mechanical steps.
 
 ## Directory convention
 
-- `source/to_cut/dbexpertai/` — dbexpertai brand (tutorials, screen recordings)
-- `source/to_cut/founder/` — founder personal brand (talking-head, opinions)
-- `source/in_progress/` — files currently being processed
-- `source/done/` — completed source files
+- `video-content/input/{slug}/` — drop video files here for processing
+- `video-content/production/` — files currently being processed
+- `video-content/output/` — completed output
 
 Brand is detected from the subdirectory. Aspect ratio is detected from the video file.
 
@@ -27,7 +26,7 @@ Brand is detected from the subdirectory. Aspect ratio is detected from the video
 
 ### 1. Setup
 - Detect brand from subdirectory (default: dbexpertai)
-- Move file from `source/to_cut/{brand}/` to `source/in_progress/`
+- Move file from `video-content/input/{slug}/` to `video-content/production/`
 - Probe the video with ffprobe to get aspect ratio, duration, resolution
 - Load the matching cut spec JSON file
 - Create a job directory: `~/.videngine/jobs/{filename}-{timestamp}/`
@@ -104,7 +103,7 @@ For each cut spec, select the best segments that fit the duration range and edit
 - Never cut mid-sentence
 - For hook specs: pick a single attention-grabbing moment, leave narration empty
 - For non-hook specs: write intro narration (1-2 sentences, first person) and outro narration
-- Pick a `mood` from the spec's `mood_options` based on the emotional arc of the segments you selected (drive=confident/upbeat, tension=urgent/dramatic, steady=calm/background)
+- Pick a `mood` from the spec's `mood_options` based on the emotional arc of the segments you selected (drive=confident/upbeat, steady=calm/background). For urgent/dramatic segments, use silence (no music) — delivery carries the energy.
 - List dropped segments with reasons for any scored 5+ that weren't included
 - Write to `{job_dir}/cut_plans/{spec_name}.json`
 
@@ -210,7 +209,7 @@ ffmpeg -y -f concat -safe 0 -i {concat_list} -c copy {clip_dir}/final.mp4
 ```
 
 ### 9. Finish up
-- Move source file from `source/in_progress/` to `source/done/`
+- Move source file from `video-content/production/` to `video-content/output/`
 - Report all final clips with durations:
 ```bash
 ffprobe -v quiet -show_entries format=duration -of csv=p=0 {clip_dir}/final.mp4

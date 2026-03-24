@@ -1,0 +1,992 @@
+{
+  "drive": {
+    "text": " Drive. I've been building AI systems for years, and what happened this week generally surprised me. Here's the thing nobody talks about. The tooling got so good that the bottleneck isn't technology anymore. It's imagination. So I gave the agent access to our production database. Not a sandbox. The real thing. And then I watched what it did. This changes everything for teams running Oracle on legacy infrastructure. And I mean everything. The model processed 40,000 rows in six minutes. Six minutes. That same analysis used to take our team a full day. Let me show you exactly what I mean. Because this is one of those things you need to see to believe. If you're a DBA and you haven't tried this yet, you're working twice as hard as you need to. That's not an exaggeration. What makes this powerful isn't the AI. It's what the AI lets you skip. All the grant work. All the manual checks. Gone. Gone. I walked into the office on Monday with a problem. By Wednesday, the agent had not only solved it. It found three other issues I didn't know existed. This is the kind of breakthrough that makes me genuinely optimistic about where database management is heading. Okay. Yeah.",
+    "segments": [
+      {
+        "start": 5.480000000000002,
+        "end": 6.24,
+        "text": "Drive."
+      },
+      {
+        "start": 7.780000000000001,
+        "end": 22.1,
+        "text": "I've been building AI systems for years, and what happened this week generally surprised me."
+      },
+      {
+        "start": 22.32,
+        "end": 24.4,
+        "text": "Here's the thing nobody talks about."
+      },
+      {
+        "start": 24.58,
+        "end": 29.2,
+        "text": "The tooling got so good that the bottleneck isn't technology anymore."
+      },
+      {
+        "start": 29.2,
+        "end": 30.32,
+        "text": "It's imagination."
+      },
+      {
+        "start": 32.06,
+        "end": 34.78,
+        "text": "So I gave the agent access to our production database."
+      },
+      {
+        "start": 35.2,
+        "end": 36.34,
+        "text": "Not a sandbox."
+      },
+      {
+        "start": 36.7,
+        "end": 37.82,
+        "text": "The real thing."
+      },
+      {
+        "start": 38.12,
+        "end": 39.94,
+        "text": "And then I watched what it did."
+      },
+      {
+        "start": 40.78,
+        "end": 45.2,
+        "text": "This changes everything for teams running Oracle on legacy infrastructure."
+      },
+      {
+        "start": 45.5,
+        "end": 47.14,
+        "text": "And I mean everything."
+      },
+      {
+        "start": 48.1,
+        "end": 52.26,
+        "text": "The model processed 40,000 rows in six minutes."
+      },
+      {
+        "start": 52.5,
+        "end": 53.3,
+        "text": "Six minutes."
+      },
+      {
+        "start": 53.58,
+        "end": 57.76,
+        "text": "That same analysis used to take our team a full day."
+      },
+      {
+        "start": 58.440000000000005,
+        "end": 60.64,
+        "text": "Let me show you exactly what I mean."
+      },
+      {
+        "start": 60.82,
+        "end": 64.76,
+        "text": "Because this is one of those things you need to see to believe."
+      },
+      {
+        "start": 65.22,
+        "end": 70.9,
+        "text": "If you're a DBA and you haven't tried this yet, you're working twice as hard as you need to."
+      },
+      {
+        "start": 71.14,
+        "end": 72.76,
+        "text": "That's not an exaggeration."
+      },
+      {
+        "start": 73.34,
+        "end": 75.7,
+        "text": "What makes this powerful isn't the AI."
+      },
+      {
+        "start": 76.02,
+        "end": 78.04,
+        "text": "It's what the AI lets you skip."
+      },
+      {
+        "start": 78.28,
+        "end": 79.48,
+        "text": "All the grant work."
+      },
+      {
+        "start": 79.7,
+        "end": 80.78,
+        "text": "All the manual checks."
+      },
+      {
+        "start": 81.02,
+        "end": 81.36,
+        "text": "Gone."
+      },
+      {
+        "start": 81.36,
+        "end": 81.5,
+        "text": "Gone."
+      },
+      {
+        "start": 81.92,
+        "end": 85.16,
+        "text": "I walked into the office on Monday with a problem."
+      },
+      {
+        "start": 85.6,
+        "end": 88.7,
+        "text": "By Wednesday, the agent had not only solved it."
+      },
+      {
+        "start": 88.86,
+        "end": 91.7,
+        "text": "It found three other issues I didn't know existed."
+      },
+      {
+        "start": 92.08,
+        "end": 97.98,
+        "text": "This is the kind of breakthrough that makes me genuinely optimistic about where database management is heading."
+      },
+      {
+        "start": 97.98,
+        "end": 98.04,
+        "text": "Okay."
+      },
+      {
+        "start": 99.24000000000001,
+        "end": 99.48,
+        "text": "Yeah."
+      },
+      {
+        "start": 99.48,
+        "end": 99.48,
+        "text": ""
+      },
+      {
+        "start": 99.46,
+        "end": 99.46,
+        "text": ""
+      }
+    ]
+  },
+  "drive-wonder": {
+    "text": " that. I generally did not think it would figure out the join optimization on its own. This is one of those moments where you realize the gap between what AI can do and what people think it can do is enormous. I've been in this industry for over a decade and I still get that feeling, that rush when something works better than you imagined. Picture this. You ask a question in plain English and it rewrites your entire monitoring setup. No SQL, no config files, just done. The wild part isn't that it works. The wild part is that it works on edge cases I specifically thought would break it. When I first saw this running in production, I literally stopped what I was doing and called my co-founder. You have to see this. Think about what this means for someone who's never written a database query in their life. They can now do what took specialists years to learn. I keep finding new things it can do. Every week there's another moment where I think, wait, that shouldn't be possible yet. We're at this incredible inflection point where the technology is outpacing our ability to even describe what it does. Imagine telling the DBA five years ago what an AI agent would handle their on-call rotation better than they do. They'd laugh. But here we are.",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 6.88,
+        "text": "that. I generally did not think it would figure out the join optimization on its own. This is one"
+      },
+      {
+        "start": 6.88,
+        "end": 12.72,
+        "text": "of those moments where you realize the gap between what AI can do and what people think it can do is"
+      },
+      {
+        "start": 12.72,
+        "end": 19.1,
+        "text": "enormous. I've been in this industry for over a decade and I still get that feeling, that rush"
+      },
+      {
+        "start": 19.1,
+        "end": 24.78,
+        "text": "when something works better than you imagined. Picture this. You ask a question in plain English"
+      },
+      {
+        "start": 24.78,
+        "end": 30.66,
+        "text": "and it rewrites your entire monitoring setup. No SQL, no config files, just done."
+      },
+      {
+        "start": 32.38,
+        "end": 38.4,
+        "text": "The wild part isn't that it works. The wild part is that it works on edge cases I specifically"
+      },
+      {
+        "start": 38.4,
+        "end": 43.4,
+        "text": "thought would break it. When I first saw this running in production, I literally stopped what"
+      },
+      {
+        "start": 43.4,
+        "end": 49.66,
+        "text": "I was doing and called my co-founder. You have to see this. Think about what this means for someone"
+      },
+      {
+        "start": 49.66,
+        "end": 54.68,
+        "text": "who's never written a database query in their life. They can now do what took specialists years"
+      },
+      {
+        "start": 54.68,
+        "end": 60.88,
+        "text": "to learn. I keep finding new things it can do. Every week there's another moment where I think,"
+      },
+      {
+        "start": 61.06,
+        "end": 68.58,
+        "text": "wait, that shouldn't be possible yet. We're at this incredible inflection point where the technology"
+      },
+      {
+        "start": 68.58,
+        "end": 75.24,
+        "text": "is outpacing our ability to even describe what it does. Imagine telling the DBA five years ago what an"
+      },
+      {
+        "start": 75.24,
+        "end": 82.08,
+        "text": "AI agent would handle their on-call rotation better than they do. They'd laugh. But here we are."
+      }
+    ]
+  },
+  "tension": {
+    "text": " talk about most companies are running their databases blind. Every hour you wait, the problem compounds. I've seen teams lose weeks of work because they ignored the early warning signs. Your data is not as safe as you think it is. I know that's uncomfortable to hear, but I've seen it too many times. The industry is shifting faster than most teams can adapt. And the ones who fall behind don't get a second chance. Right now, somewhere a database is failing silently. No alerts, no warnings, just slow degradation until something breaks. If you're still doing manual health checks once a quarter, you're already behind. The threats are real-time, your monitoring should be too. This is the part where I have to be honest with you. The old way of doing things is dying, and pretending otherwise helps no one. I talk to teams every week who are one bad deploy away from a serious incident. They don't know it yet, but the signs are all there. The cost of inaction isn't theoretical. I've watched companies lose customers, lose revenue, lose trust, all because they move too slowly. When a production database goes down at two in the morning, nobody cares about your roadmap. They care about whether you saw it coming.",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 5.96,
+        "text": "talk about most companies are running their databases blind. Every hour you wait, the"
+      },
+      {
+        "start": 5.96,
+        "end": 12.5,
+        "text": "problem compounds. I've seen teams lose weeks of work because they ignored the early warning"
+      },
+      {
+        "start": 12.5,
+        "end": 18.8,
+        "text": "signs. Your data is not as safe as you think it is. I know that's uncomfortable to hear,"
+      },
+      {
+        "start": 18.94,
+        "end": 24.52,
+        "text": "but I've seen it too many times. The industry is shifting faster than most teams can adapt."
+      },
+      {
+        "start": 24.52,
+        "end": 31.56,
+        "text": "And the ones who fall behind don't get a second chance. Right now, somewhere a database is failing"
+      },
+      {
+        "start": 31.56,
+        "end": 37.66,
+        "text": "silently. No alerts, no warnings, just slow degradation until something breaks. If you're"
+      },
+      {
+        "start": 37.66,
+        "end": 43.8,
+        "text": "still doing manual health checks once a quarter, you're already behind. The threats are real-time,"
+      },
+      {
+        "start": 43.98,
+        "end": 49.8,
+        "text": "your monitoring should be too. This is the part where I have to be honest with you. The old way"
+      },
+      {
+        "start": 49.8,
+        "end": 57.06,
+        "text": "of doing things is dying, and pretending otherwise helps no one. I talk to teams every week who are"
+      },
+      {
+        "start": 57.06,
+        "end": 62.66,
+        "text": "one bad deploy away from a serious incident. They don't know it yet, but the signs are all there."
+      },
+      {
+        "start": 62.9,
+        "end": 68.08,
+        "text": "The cost of inaction isn't theoretical. I've watched companies lose customers, lose revenue,"
+      },
+      {
+        "start": 68.26,
+        "end": 75.28,
+        "text": "lose trust, all because they move too slowly. When a production database goes down at two in the morning,"
+      },
+      {
+        "start": 75.28,
+        "end": 79.94,
+        "text": "nobody cares about your roadmap. They care about whether you saw it coming."
+      }
+    ]
+  },
+  "tension-vulnerability": {
+    "text": " I thought our approach was solid and I was wrong. There's this pressure to always sound certain, but the truth is I don't have all the answers. Nobody does right now. I spent three months building something nobody needed. Three months. And I should have known sooner, but I didn't want to see it. When I started this company, I had no idea what I was doing with half of it. I just figured that if I kept building, I'd learned sometimes something that worked. Sometimes it didn't. The hardest part of leading a tech company isn't the technology. It's sitting across from someone and saying, I don't know yet, but I'm working on it. I remember the night our production system went down for six hours, sitting there at 3 a.m., staring at logs, thinking I should have caught this weeks ago. People see the wins. They don't see the 30 ideas that did not work. The features we killed. The bets we lost. I used to think being a founder meant having conviction about everything. Now I think it means being honest about what you don't know and figuring it out anyway. There are days when imposter syndrome hits hard, when you wonder if you're the right person to build this. I think anyone who says they don't feel it is lying. Asking for help was the hardest lesson. I burned out twice before I learned that. Doing everything myself isn't strength. It's stubbornness.",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 3.36,
+        "text": "I thought our approach was solid and I was wrong."
+      },
+      {
+        "start": 4.36,
+        "end": 9.04,
+        "text": "There's this pressure to always sound certain, but the truth is I don't have all the answers."
+      },
+      {
+        "start": 9.32,
+        "end": 10.5,
+        "text": "Nobody does right now."
+      },
+      {
+        "start": 11.18,
+        "end": 14.04,
+        "text": "I spent three months building something nobody needed."
+      },
+      {
+        "start": 14.3,
+        "end": 14.8,
+        "text": "Three months."
+      },
+      {
+        "start": 15.18,
+        "end": 18.12,
+        "text": "And I should have known sooner, but I didn't want to see it."
+      },
+      {
+        "start": 18.5,
+        "end": 22.34,
+        "text": "When I started this company, I had no idea what I was doing with half of it."
+      },
+      {
+        "start": 22.56,
+        "end": 28.04,
+        "text": "I just figured that if I kept building, I'd learned sometimes something that worked."
+      },
+      {
+        "start": 28.58,
+        "end": 29.8,
+        "text": "Sometimes it didn't."
+      },
+      {
+        "start": 30.68,
+        "end": 34.44,
+        "text": "The hardest part of leading a tech company isn't the technology."
+      },
+      {
+        "start": 34.8,
+        "end": 40.32,
+        "text": "It's sitting across from someone and saying, I don't know yet, but I'm working on it."
+      },
+      {
+        "start": 40.8,
+        "end": 47.26,
+        "text": "I remember the night our production system went down for six hours, sitting there at 3 a.m.,"
+      },
+      {
+        "start": 47.26,
+        "end": 50.54,
+        "text": "staring at logs, thinking I should have caught this weeks ago."
+      },
+      {
+        "start": 50.98,
+        "end": 52.18,
+        "text": "People see the wins."
+      },
+      {
+        "start": 52.32,
+        "end": 55.36,
+        "text": "They don't see the 30 ideas that did not work."
+      },
+      {
+        "start": 55.68,
+        "end": 57.22,
+        "text": "The features we killed."
+      },
+      {
+        "start": 57.46,
+        "end": 58.3,
+        "text": "The bets we lost."
+      },
+      {
+        "start": 58.959999999999994,
+        "end": 62.62,
+        "text": "I used to think being a founder meant having conviction about everything."
+      },
+      {
+        "start": 62.88,
+        "end": 67.64,
+        "text": "Now I think it means being honest about what you don't know and figuring it out anyway."
+      },
+      {
+        "start": 68.24,
+        "end": 73.72,
+        "text": "There are days when imposter syndrome hits hard, when you wonder if you're the right person to build this."
+      },
+      {
+        "start": 73.72,
+        "end": 77.34,
+        "text": "I think anyone who says they don't feel it is lying."
+      },
+      {
+        "start": 78.14,
+        "end": 80.18,
+        "text": "Asking for help was the hardest lesson."
+      },
+      {
+        "start": 80.48,
+        "end": 82.24,
+        "text": "I burned out twice before I learned that."
+      },
+      {
+        "start": 82.5,
+        "end": 85.06,
+        "text": "Doing everything myself isn't strength."
+      },
+      {
+        "start": 85.4,
+        "end": 86.64,
+        "text": "It's stubbornness."
+      }
+    ]
+  },
+  "steady": {
+    "text": " Because once you see how it works, it's actually pretty straightforward. The first thing you want to do is check your connection settings. Open the config file, it's usually at the root directory, and look for the host parameter. Don't worry if this looks complicated at first, everyone feels that way. By the end of this, you'll know exactly what each piece does. So what's happening under the hood is the query planner is choosing between a sequential scan and an index scan. In plain English, it's deciding the fastest way to find your data. This is one of those tools that saves you maybe 10 minutes a day. Doesn't sound like much, but over a month, that's an entire workday back. If you get an error at this step, it's almost always a permission issue. Check that your user has read access to the schema and try again. The nice thing about this approach is it's reversible. If something doesn't look right, you can roll it back with one command, no stress. I like to think of indexes like a book's table of contents. Without one, the database has to read every single page to find what you need. With one, it jumps straight there. Take your time with this part. There's no rush. Get comfortable with the basics before we move on to the more advanced configuration. What we just did in five minutes would have taken most teams an afternoon of manual work. That's the whole point. Let the tooling handle the tedious stuff so you can focus on the interesting problems.",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 3.28,
+        "text": "Because once you see how it works, it's actually pretty straightforward."
+      },
+      {
+        "start": 4.84,
+        "end": 7.58,
+        "text": "The first thing you want to do is check your connection settings."
+      },
+      {
+        "start": 7.88,
+        "end": 13.64,
+        "text": "Open the config file, it's usually at the root directory, and look for the host parameter."
+      },
+      {
+        "start": 13.94,
+        "end": 18.0,
+        "text": "Don't worry if this looks complicated at first, everyone feels that way."
+      },
+      {
+        "start": 18.32,
+        "end": 21.86,
+        "text": "By the end of this, you'll know exactly what each piece does."
+      },
+      {
+        "start": 22.48,
+        "end": 27.36,
+        "text": "So what's happening under the hood is the query planner is choosing between a sequential"
+      },
+      {
+        "start": 27.36,
+        "end": 29.3,
+        "text": "scan and an index scan."
+      },
+      {
+        "start": 29.3,
+        "end": 33.38,
+        "text": "In plain English, it's deciding the fastest way to find your data."
+      },
+      {
+        "start": 33.92,
+        "end": 37.62,
+        "text": "This is one of those tools that saves you maybe 10 minutes a day."
+      },
+      {
+        "start": 38.1,
+        "end": 42.58,
+        "text": "Doesn't sound like much, but over a month, that's an entire workday back."
+      },
+      {
+        "start": 43.24,
+        "end": 47.28,
+        "text": "If you get an error at this step, it's almost always a permission issue."
+      },
+      {
+        "start": 47.82,
+        "end": 51.22,
+        "text": "Check that your user has read access to the schema and try again."
+      },
+      {
+        "start": 51.76,
+        "end": 55.02,
+        "text": "The nice thing about this approach is it's reversible."
+      },
+      {
+        "start": 55.02,
+        "end": 60.12,
+        "text": "If something doesn't look right, you can roll it back with one command, no stress."
+      },
+      {
+        "start": 60.980000000000004,
+        "end": 64.72,
+        "text": "I like to think of indexes like a book's table of contents."
+      },
+      {
+        "start": 64.72,
+        "end": 69.2,
+        "text": "Without one, the database has to read every single page to find what you need."
+      },
+      {
+        "start": 69.52,
+        "end": 71.4,
+        "text": "With one, it jumps straight there."
+      },
+      {
+        "start": 72.02,
+        "end": 73.8,
+        "text": "Take your time with this part."
+      },
+      {
+        "start": 74.0,
+        "end": 74.86,
+        "text": "There's no rush."
+      },
+      {
+        "start": 75.2,
+        "end": 79.72,
+        "text": "Get comfortable with the basics before we move on to the more advanced configuration."
+      },
+      {
+        "start": 79.72,
+        "end": 86.16,
+        "text": "What we just did in five minutes would have taken most teams an afternoon of manual work."
+      },
+      {
+        "start": 86.16,
+        "end": 87.66,
+        "text": "That's the whole point."
+      },
+      {
+        "start": 88.0,
+        "end": 93.7,
+        "text": "Let the tooling handle the tedious stuff so you can focus on the interesting problems."
+      }
+    ]
+  },
+  "steady-empathy": {
+    "text": " There is so much changing so fast and it's completely normal to feel like you can't keep up. If you're sitting there thinking, am I too late to learn this? You're not. I promise you, you're not. People start from exactly where you start every single day. The fear is real. When your industry starts changing and you're not sure where you fit, that's a heavy feeling. I felt it too. You don't need to become a programmer. You don't need to understand neural networks. You just need to understand what's possible and how to use it. That's it. Look, nobody expects you to figure this out overnight. The people who seem like they have it all together, they're learning as they go, just like you. I talk to people every day and every week who feel exactly the way you do right now. Smart, experienced professionals who suddenly feel like beginners again. That takes courage to sit with. The whole reason I make this content is because I remember what I felt like not to understand something everyone else seemed to get. That feeling is temporary. Here's what I want you to hear. Your experience matters more than you think. AI can process data, but it can't do what you do. That's not a platitude. I built this technology and I'm telling you, your judgment is irreplaceable. Take a breath. You're doing fine. The fact that you're here trying to learn this puts you ahead of most people who are just hoping it goes away. There is no stupid question in this space. The technology moves so fast that even experts are confused half the time. Anyone who says otherwise is selfish.",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 5.94,
+        "text": "There is so much changing so fast and it's completely normal to feel like you can't keep up."
+      },
+      {
+        "start": 6.36,
+        "end": 9.78,
+        "text": "If you're sitting there thinking, am I too late to learn this?"
+      },
+      {
+        "start": 9.9,
+        "end": 10.6,
+        "text": "You're not."
+      },
+      {
+        "start": 10.76,
+        "end": 12.68,
+        "text": "I promise you, you're not."
+      },
+      {
+        "start": 13.1,
+        "end": 16.7,
+        "text": "People start from exactly where you start every single day."
+      },
+      {
+        "start": 17.2,
+        "end": 18.44,
+        "text": "The fear is real."
+      },
+      {
+        "start": 18.62,
+        "end": 24.84,
+        "text": "When your industry starts changing and you're not sure where you fit, that's a heavy feeling."
+      },
+      {
+        "start": 25.0,
+        "end": 25.82,
+        "text": "I felt it too."
+      },
+      {
+        "start": 26.42,
+        "end": 28.22,
+        "text": "You don't need to become a programmer."
+      },
+      {
+        "start": 28.22,
+        "end": 30.56,
+        "text": "You don't need to understand neural networks."
+      },
+      {
+        "start": 30.56,
+        "end": 34.16,
+        "text": "You just need to understand what's possible and how to use it."
+      },
+      {
+        "start": 34.34,
+        "end": 34.8,
+        "text": "That's it."
+      },
+      {
+        "start": 35.48,
+        "end": 38.88,
+        "text": "Look, nobody expects you to figure this out overnight."
+      },
+      {
+        "start": 39.28,
+        "end": 44.14,
+        "text": "The people who seem like they have it all together, they're learning as they go, just like you."
+      },
+      {
+        "start": 44.66,
+        "end": 50.4,
+        "text": "I talk to people every day and every week who feel exactly the way you do right now."
+      },
+      {
+        "start": 50.68,
+        "end": 54.86,
+        "text": "Smart, experienced professionals who suddenly feel like beginners again."
+      },
+      {
+        "start": 55.32,
+        "end": 57.26,
+        "text": "That takes courage to sit with."
+      },
+      {
+        "start": 57.26,
+        "end": 65.94,
+        "text": "The whole reason I make this content is because I remember what I felt like not to understand something everyone else seemed to get."
+      },
+      {
+        "start": 66.16,
+        "end": 67.56,
+        "text": "That feeling is temporary."
+      },
+      {
+        "start": 68.12,
+        "end": 69.5,
+        "text": "Here's what I want you to hear."
+      },
+      {
+        "start": 69.84,
+        "end": 72.5,
+        "text": "Your experience matters more than you think."
+      },
+      {
+        "start": 72.88,
+        "end": 76.12,
+        "text": "AI can process data, but it can't do what you do."
+      },
+      {
+        "start": 76.54,
+        "end": 77.82,
+        "text": "That's not a platitude."
+      },
+      {
+        "start": 77.82,
+        "end": 82.3,
+        "text": "I built this technology and I'm telling you, your judgment is irreplaceable."
+      },
+      {
+        "start": 82.56,
+        "end": 83.44,
+        "text": "Take a breath."
+      },
+      {
+        "start": 83.6,
+        "end": 84.24,
+        "text": "You're doing fine."
+      },
+      {
+        "start": 84.58,
+        "end": 90.44,
+        "text": "The fact that you're here trying to learn this puts you ahead of most people who are just hoping it goes away."
+      },
+      {
+        "start": 91.06,
+        "end": 93.56,
+        "text": "There is no stupid question in this space."
+      },
+      {
+        "start": 93.8,
+        "end": 98.36,
+        "text": "The technology moves so fast that even experts are confused half the time."
+      },
+      {
+        "start": 98.36,
+        "end": 100.98,
+        "text": "Anyone who says otherwise is selfish."
+      }
+    ]
+  },
+  "high-intensity-drive": {
+    "text": " Everything changes right here. Not next year, not next quarter. Right now. We ran the benchmarks against every major platform on the market and it wasn't even close. Not even close. In 18 months, the database teams that adapt this will be running circles around the ones that don't. That's not a prediction. That's math. I built this because I was tired of watching talented people waste their time on problems that machines could solve and should solve. And now it actually works. Forget everything you thought you knew about database monitoring. Seriously, throw it out. Because what I'm about to show you makes all of it obsolete. This is why I get up in the morning. Not the technology. The fact that it actually helps people do better work. That's the whole point. If you take one thing away from this video, let it be this. You have more power to shape your career right now than at any point in the last 20 years. Use it. We went from concept to production in six weeks. Six weeks. And it's running right now. Handling real workloads. Caching real problems 24-7. That people who move first always win. Always. Not because they're smarter. Because they're willing to act while everyone else is still debating. This is the future of how teams manage data. I'm not guessing. I'm not speculating. I built it. I tested it. And I'm watching it work every single day.",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 1.56,
+        "text": "Everything changes right here."
+      },
+      {
+        "start": 1.76,
+        "end": 3.34,
+        "text": "Not next year, not next quarter."
+      },
+      {
+        "start": 3.62,
+        "end": 4.5,
+        "text": "Right now."
+      },
+      {
+        "start": 4.84,
+        "end": 8.8,
+        "text": "We ran the benchmarks against every major platform on the market"
+      },
+      {
+        "start": 8.8,
+        "end": 10.2,
+        "text": "and it wasn't even close."
+      },
+      {
+        "start": 10.42,
+        "end": 11.76,
+        "text": "Not even close."
+      },
+      {
+        "start": 12.12,
+        "end": 15.22,
+        "text": "In 18 months, the database teams that adapt this"
+      },
+      {
+        "start": 15.22,
+        "end": 17.78,
+        "text": "will be running circles around the ones that don't."
+      },
+      {
+        "start": 18.24,
+        "end": 19.3,
+        "text": "That's not a prediction."
+      },
+      {
+        "start": 19.56,
+        "end": 20.4,
+        "text": "That's math."
+      },
+      {
+        "start": 20.58,
+        "end": 23.9,
+        "text": "I built this because I was tired of watching talented people"
+      },
+      {
+        "start": 23.9,
+        "end": 27.1,
+        "text": "waste their time on problems that machines could solve"
+      },
+      {
+        "start": 27.1,
+        "end": 28.54,
+        "text": "and should solve."
+      },
+      {
+        "start": 28.54,
+        "end": 30.66,
+        "text": "And now it actually works."
+      },
+      {
+        "start": 31.36,
+        "end": 34.52,
+        "text": "Forget everything you thought you knew about database monitoring."
+      },
+      {
+        "start": 34.86,
+        "end": 36.02,
+        "text": "Seriously, throw it out."
+      },
+      {
+        "start": 36.24,
+        "end": 40.16,
+        "text": "Because what I'm about to show you makes all of it obsolete."
+      },
+      {
+        "start": 40.74,
+        "end": 42.72,
+        "text": "This is why I get up in the morning."
+      },
+      {
+        "start": 42.98,
+        "end": 44.14,
+        "text": "Not the technology."
+      },
+      {
+        "start": 44.4,
+        "end": 47.28,
+        "text": "The fact that it actually helps people do better work."
+      },
+      {
+        "start": 47.42,
+        "end": 48.62,
+        "text": "That's the whole point."
+      },
+      {
+        "start": 48.88,
+        "end": 52.44,
+        "text": "If you take one thing away from this video, let it be this."
+      },
+      {
+        "start": 52.62,
+        "end": 57.64,
+        "text": "You have more power to shape your career right now"
+      },
+      {
+        "start": 57.64,
+        "end": 60.6,
+        "text": "than at any point in the last 20 years."
+      },
+      {
+        "start": 60.92,
+        "end": 61.42,
+        "text": "Use it."
+      },
+      {
+        "start": 62.16,
+        "end": 64.94,
+        "text": "We went from concept to production in six weeks."
+      },
+      {
+        "start": 65.14,
+        "end": 65.86,
+        "text": "Six weeks."
+      },
+      {
+        "start": 66.02,
+        "end": 67.28,
+        "text": "And it's running right now."
+      },
+      {
+        "start": 67.58,
+        "end": 68.86,
+        "text": "Handling real workloads."
+      },
+      {
+        "start": 69.64,
+        "end": 71.74,
+        "text": "Caching real problems 24-7."
+      },
+      {
+        "start": 72.94,
+        "end": 75.26,
+        "text": "That people who move first always win."
+      },
+      {
+        "start": 75.42,
+        "end": 75.7,
+        "text": "Always."
+      },
+      {
+        "start": 76.0,
+        "end": 77.4,
+        "text": "Not because they're smarter."
+      },
+      {
+        "start": 77.62,
+        "end": 80.88,
+        "text": "Because they're willing to act while everyone else is still debating."
+      },
+      {
+        "start": 81.32,
+        "end": 84.08,
+        "text": "This is the future of how teams manage data."
+      },
+      {
+        "start": 84.3,
+        "end": 85.16,
+        "text": "I'm not guessing."
+      },
+      {
+        "start": 85.3,
+        "end": 86.24,
+        "text": "I'm not speculating."
+      },
+      {
+        "start": 86.42,
+        "end": 87.0,
+        "text": "I built it."
+      },
+      {
+        "start": 87.0,
+        "end": 87.76,
+        "text": "I tested it."
+      },
+      {
+        "start": 87.86,
+        "end": 89.98,
+        "text": "And I'm watching it work every single day."
+      }
+    ]
+  },
+  "reflective-calm": {
+    "text": " better. That's the only metric that counts. I think about this stuff a lot, not just the technology, but what kind of world we're building with it. That question deserves more space than it gets. Sometimes the best thing you can do is step away from the screen, go for a walk, let the ideas settle. The answers come when you stop forcing them. We are living through one of the biggest shifts in how humans work, and most people haven't even noticed yet. That's strange when you think about it. The technology will keep getting better. That's inevitable. The question is whether we get better at using it wisely. That part is up to us. I started this journey because I love building things. Years later, what keeps me going is the people who tell me it actually helped. That never gets old. There's a version of the future where AI makes everything worse, and there's a version where it makes things genuinely better. We are choosing right now. If you made it this far, thank you for your time. I mean that. Attention is the most valuable thing you can give someone, and I don't take it for granted. The tools change. The platforms change. The one thing that stays constant is that people who keep learning keep winning. It's been true for centuries. It's still true now. So, that's what I've got for you today. Sit with it. Think about how it applies to your world. And if something clicks, let me know.",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 9.04,
+        "text": "better. That's the only metric that counts. I think about this stuff a lot, not just the technology,"
+      },
+      {
+        "start": 9.38,
+        "end": 16.56,
+        "text": "but what kind of world we're building with it. That question deserves more space than it gets."
+      },
+      {
+        "start": 18.22,
+        "end": 24.86,
+        "text": "Sometimes the best thing you can do is step away from the screen, go for a walk, let the ideas"
+      },
+      {
+        "start": 24.86,
+        "end": 31.34,
+        "text": "settle. The answers come when you stop forcing them. We are living through one of the biggest"
+      },
+      {
+        "start": 31.34,
+        "end": 39.0,
+        "text": "shifts in how humans work, and most people haven't even noticed yet. That's strange when you think"
+      },
+      {
+        "start": 39.0,
+        "end": 46.7,
+        "text": "about it. The technology will keep getting better. That's inevitable. The question is whether we get"
+      },
+      {
+        "start": 46.7,
+        "end": 55.2,
+        "text": "better at using it wisely. That part is up to us. I started this journey because I love building"
+      },
+      {
+        "start": 55.2,
+        "end": 62.94,
+        "text": "things. Years later, what keeps me going is the people who tell me it actually helped. That never"
+      },
+      {
+        "start": 62.94,
+        "end": 70.06,
+        "text": "gets old. There's a version of the future where AI makes everything worse, and there's a version where"
+      },
+      {
+        "start": 70.06,
+        "end": 79.26,
+        "text": "it makes things genuinely better. We are choosing right now. If you made it this far, thank you for"
+      },
+      {
+        "start": 79.26,
+        "end": 86.04,
+        "text": "your time. I mean that. Attention is the most valuable thing you can give someone, and I don't take it for"
+      },
+      {
+        "start": 86.04,
+        "end": 94.06,
+        "text": "granted. The tools change. The platforms change. The one thing that stays constant is that people who"
+      },
+      {
+        "start": 94.06,
+        "end": 103.74,
+        "text": "keep learning keep winning. It's been true for centuries. It's still true now. So, that's what I've got for you"
+      },
+      {
+        "start": 103.74,
+        "end": 111.8,
+        "text": "today. Sit with it. Think about how it applies to your world. And if something clicks, let me know."
+      }
+    ]
+  }
+}

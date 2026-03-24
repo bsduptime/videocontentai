@@ -104,6 +104,7 @@ class CutSpec(BaseModel):
     is_hook: bool = False  # True for the 7-15s hook spec
     prepend_hook: bool = False  # True = prepend the hook clip to this cut
     mood_options: list[str] = Field(default_factory=list)  # mood names from moods.json — agent picks one
+    audio_profile: str = "macbook"  # audio preprocessing profile ("macbook", "iphone")
 
 
 class Mood(BaseModel):

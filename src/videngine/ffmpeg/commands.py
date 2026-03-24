@@ -97,6 +97,41 @@ def scale_to_1080p(
     ]
 
 
+def compress_audio(
+    input_path: str,
+    output_path: str,
+    encoding: EncodingConfig,
+    threshold_db: float = -20.0,
+    ratio: float = 3.0,
+    attack_ms: float = 5.0,
+    release_ms: float = 200.0,
+    knee_db: float = 6.0,
+    makeup_db: float = 2.0,
+) -> list[str]:
+    """Apply gentle dynamic compression to speech audio. Video stream-copied.
+
+    Default settings are tuned for broadcast speech: light compression
+    that tames peaks and brings up quiet passages slightly, making
+    speech easier to understand without sounding over-processed.
+    """
+    af = (
+        f"acompressor=threshold={threshold_db}dB"
+        f":ratio={ratio}"
+        f":attack={attack_ms}"
+        f":release={release_ms}"
+        f":knee={knee_db}"
+        f":makeup={makeup_db}dB"
+    )
+    return [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-af", af,
+        "-c:v", "copy",
+        *_audio_encode_args(encoding),
+        output_path,
+    ]
+
+
 def loudnorm_measure(
     input_path: str,
     target_lufs: float = -16.0,

@@ -59,3 +59,53 @@ def probe(file_path: str) -> MediaInfo:
         audio_sample_rate=int(audio_stream["sample_rate"]) if audio_stream else None,
         has_audio=audio_stream is not None,
     )
+
+
+def detect_recording_device(file_path: str) -> str:
+    """Detect if video was recorded on iPhone or MacBook.
+
+    Uses ffprobe metadata (handler_name, codec, color space) to identify
+    the recording device. Must be run on the original unprocessed file —
+    FFmpeg-processed files lose device metadata.
+
+    Returns: "iphone" or "macbook" (default fallback).
+    """
+    cmd = [
+        "ffprobe", "-v", "quiet",
+        "-print_format", "json",
+        "-show_format", "-show_streams",
+        file_path,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    data = json.loads(result.stdout)
+
+    video_stream = next(
+        (s for s in data.get("streams", []) if s["codec_type"] == "video"),
+        None,
+    )
+    if not video_stream:
+        return "macbook"
+
+    stream_tags = video_stream.get("tags", {})
+    format_tags = data.get("format", {}).get("tags", {})
+
+    # iPhone: Apple's Core Media handler
+    handler = stream_tags.get("handler_name", "")
+    if "Core Media" in handler:
+        return "iphone"
+
+    # iPhone: HEVC is default codec on iPhone 8+
+    if video_stream.get("codec_name") == "hevc":
+        return "iphone"
+
+    # iPhone: HDR color space (Dolby Vision / HLG)
+    color_transfer = video_stream.get("color_transfer", "")
+    if color_transfer in ("arib-std-b67", "smpte2084"):
+        return "iphone"
+
+    # iPhone: QuickTime model tag (most reliable when present)
+    model = format_tags.get("com.apple.quicktime.model", "")
+    if "iPhone" in model:
+        return "iphone"
+
+    return "macbook"

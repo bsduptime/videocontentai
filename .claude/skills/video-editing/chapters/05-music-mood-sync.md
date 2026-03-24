@@ -1,20 +1,18 @@
 # Chapter 5: Music & Mood Sync
 
-Integrates with `config/cut_specs/moods.json` (drive/tension/steady). Covers beat sync,
+Integrates with `config/cut_specs/moods.json` (drive/steady). Covers beat sync,
 ducking, silence, emotional math, and volume levels.
 
 ---
 
-## 5.1 Mood System: drive / tension / steady
+## 5.1 Mood System: drive / steady (+ silence)
 
 | Mood | Valence | Arousal | BPM | Editing Style |
 |------|---------|---------|-----|---------------|
-| **drive** | positive | high | 120 | Confident, upbeat, forward momentum. Tips, demos, hot takes. |
-| **tension** | negative | high | 120 | Urgent, tense, dramatic. Hooks, incidents, narrative tension. |
+| **drive** | positive | high | 120 | Confident, upbeat, forward momentum. Tips, demos, hot takes, hooks. |
 | **steady** | positive | low | 80 | Calm, unobtrusive, behind narration. Tutorials, deep dives. |
 
-Drive and tension share 120 BPM for seamless cross-cuts. Steady at 80 BPM (2:3 ratio)
-for rhythmic compatibility.
+Drive at 120 BPM, steady at 80 BPM (2:3 ratio) for rhythmic compatibility. Problem statements, stakes, and negative-valence hooks use **silence** (no music) — delivery carries the urgency. Negative high-arousal music hurts recall.
 
 ---
 
@@ -25,7 +23,6 @@ Cut on **bar boundaries** (every 4 beats), not every individual beat.
 | Mood | BPM | Bar duration | Cut alignment |
 |------|-----|-------------|---------------|
 | drive | 120 | 2.0s | Cut every 2-4 seconds (1-2 bars) |
-| tension | 120 | 2.0s | Cut every 2-4 seconds (1-2 bars) |
 | steady | 80 | 3.0s | Cut every 5-10 seconds (2-3 bars) |
 
 ### Rules
@@ -47,7 +44,7 @@ The current pipeline uses flat `volume=0.10` (~-20dB). This should vary:
 |--------------|-------------|----------------|----------------|
 | Speech (tutorial/steady) | 8-10% | -20 to -22 dB | 0.08-0.10 |
 | Speech (drive/energy) | 12-15% | -16 to -18 dB | 0.12-0.15 |
-| Speech (tension/drama) | 10-12% | -18 to -20 dB | 0.10-0.12 |
+| Speech (stakes/drama) | 0% | muted (silence) | 0.00 |
 | B-roll (no speech) | 30-50% | -6 to -10 dB | 0.30-0.50 |
 | Intro/outro (no speech) | 40-60% | -4 to -8 dB | 0.40-0.60 |
 | Strategic silence | 0% | muted | 0.00 |
@@ -97,7 +94,7 @@ Strategic silence creates more impact than any music track.
 - Before the single most important statement in a segment
 - After a contrarian claim (let cognitive dissonance settle)
 - During a visual reveal (let eyes absorb without audio competition)
-- Transition from tension to calm (relief beat)
+- Transition from stakes/urgency to calm (relief beat)
 
 ### When NOT to Use Silence
 
@@ -116,14 +113,14 @@ Incongruent combinations create specific effects:
 |-------|----------|----------------|
 | drive + drive delivery | High energy | Confident, exciting, uplifting |
 | drive + calm delivery | Understated confidence | Authority without hype |
-| tension + tension delivery | Maximum urgency | "This is critical" |
-| tension + calm delivery | Unease | "Something is wrong" — creepy, unsettling |
+| silence + urgent delivery | Maximum urgency | "This is critical" — voice carries all energy |
+| silence + calm delivery | Unease | "Something is wrong" — quiet, unsettling |
 | steady + steady delivery | Background calm | Tutorial default — content speaks |
 | steady + drive delivery | Rising energy | Building momentum against calm backdrop |
 
 ### Rules
 
-- Always **end cuts on drive or steady**, never tension (leave viewer on positive/calm note)
+- Always **end cuts on drive or steady** (leave viewer on positive/calm note)
 - Match music energy to highest-energy moment in the segment, not the average
 - If delivery is flat, use music to compensate (higher energy music lifts flat speech)
 - If delivery is excellent, music can be lower — don't compete

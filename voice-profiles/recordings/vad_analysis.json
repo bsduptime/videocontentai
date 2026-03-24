@@ -1,0 +1,644 @@
+[
+  {
+    "file": "voice-profiles/recordings/reflective-calm.wav",
+    "duration_sec": 114.52,
+    "overall": {
+      "arousal": 0.2414,
+      "dominance": 0.265,
+      "valence": 0.2336,
+      "energy_mode": "steady"
+    },
+    "windows": [
+      {
+        "start_sec": 0.0,
+        "end_sec": 3.0,
+        "arousal": 0.2459,
+        "dominance": 0.2574,
+        "valence": 0.2218,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 3.0,
+        "end_sec": 6.0,
+        "arousal": 0.2029,
+        "dominance": 0.2137,
+        "valence": 0.1966,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 6.0,
+        "end_sec": 9.0,
+        "arousal": 0.2205,
+        "dominance": 0.2669,
+        "valence": 0.2164,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 9.0,
+        "end_sec": 12.0,
+        "arousal": 0.2042,
+        "dominance": 0.2284,
+        "valence": 0.2589,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 12.0,
+        "end_sec": 15.0,
+        "arousal": 0.2262,
+        "dominance": 0.2662,
+        "valence": 0.2321,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 15.0,
+        "end_sec": 18.0,
+        "arousal": 0.1616,
+        "dominance": 0.1976,
+        "valence": 0.1414,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 18.0,
+        "end_sec": 21.0,
+        "arousal": 0.2042,
+        "dominance": 0.228,
+        "valence": 0.2497,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 21.0,
+        "end_sec": 24.0,
+        "arousal": 0.235,
+        "dominance": 0.2693,
+        "valence": 0.2569,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 24.0,
+        "end_sec": 27.0,
+        "arousal": 0.2431,
+        "dominance": 0.2582,
+        "valence": 0.2145,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 27.0,
+        "end_sec": 30.0,
+        "arousal": 0.229,
+        "dominance": 0.2642,
+        "valence": 0.105,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 30.0,
+        "end_sec": 33.0,
+        "arousal": 0.2652,
+        "dominance": 0.2937,
+        "valence": 0.3569,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 33.0,
+        "end_sec": 36.0,
+        "arousal": 0.1679,
+        "dominance": 0.2051,
+        "valence": 0.1336,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 36.0,
+        "end_sec": 39.0,
+        "arousal": 0.2466,
+        "dominance": 0.2698,
+        "valence": 0.1824,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 39.0,
+        "end_sec": 42.0,
+        "arousal": 0.2719,
+        "dominance": 0.2818,
+        "valence": 0.2877,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 42.0,
+        "end_sec": 45.0,
+        "arousal": 0.2975,
+        "dominance": 0.3019,
+        "valence": 0.2324,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 45.0,
+        "end_sec": 48.0,
+        "arousal": 0.3354,
+        "dominance": 0.3197,
+        "valence": 0.2546,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 48.0,
+        "end_sec": 51.0,
+        "arousal": 0.2668,
+        "dominance": 0.2946,
+        "valence": 0.3041,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 51.0,
+        "end_sec": 54.0,
+        "arousal": 0.3336,
+        "dominance": 0.3411,
+        "valence": 0.3198,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 54.0,
+        "end_sec": 57.0,
+        "arousal": 0.2751,
+        "dominance": 0.3134,
+        "valence": 0.3281,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 57.0,
+        "end_sec": 60.0,
+        "arousal": 0.2859,
+        "dominance": 0.2847,
+        "valence": 0.1849,
+        "energy_mode": "tension"
+      },
+      {
+        "start_sec": 60.0,
+        "end_sec": 63.0,
+        "arousal": 0.2431,
+        "dominance": 0.258,
+        "valence": 0.2569,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 63.0,
+        "end_sec": 66.0,
+        "arousal": 0.2418,
+        "dominance": 0.2616,
+        "valence": 0.1941,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 66.0,
+        "end_sec": 69.0,
+        "arousal": 0.3018,
+        "dominance": 0.2992,
+        "valence": 0.1956,
+        "energy_mode": "tension"
+      },
+      {
+        "start_sec": 69.0,
+        "end_sec": 72.0,
+        "arousal": 0.2698,
+        "dominance": 0.2803,
+        "valence": 0.2772,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 72.0,
+        "end_sec": 75.0,
+        "arousal": 0.2075,
+        "dominance": 0.2464,
+        "valence": 0.2297,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 75.0,
+        "end_sec": 78.0,
+        "arousal": 0.279,
+        "dominance": 0.3057,
+        "valence": 0.1684,
+        "energy_mode": "tension"
+      },
+      {
+        "start_sec": 78.0,
+        "end_sec": 81.0,
+        "arousal": 0.274,
+        "dominance": 0.2982,
+        "valence": 0.3136,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 81.0,
+        "end_sec": 84.0,
+        "arousal": 0.2508,
+        "dominance": 0.2937,
+        "valence": 0.3388,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 84.0,
+        "end_sec": 87.0,
+        "arousal": 0.1488,
+        "dominance": 0.1985,
+        "valence": 0.1534,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 87.0,
+        "end_sec": 90.0,
+        "arousal": 0.2876,
+        "dominance": 0.3041,
+        "valence": 0.268,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 90.0,
+        "end_sec": 93.0,
+        "arousal": 0.2423,
+        "dominance": 0.2715,
+        "valence": 0.2843,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 93.0,
+        "end_sec": 96.0,
+        "arousal": 0.2449,
+        "dominance": 0.2736,
+        "valence": 0.2248,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 96.0,
+        "end_sec": 99.0,
+        "arousal": 0.221,
+        "dominance": 0.2604,
+        "valence": 0.1942,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 99.0,
+        "end_sec": 102.0,
+        "arousal": 0.134,
+        "dominance": 0.1703,
+        "valence": 0.1219,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 102.0,
+        "end_sec": 105.0,
+        "arousal": 0.2776,
+        "dominance": 0.2986,
+        "valence": 0.3026,
+        "energy_mode": "drive"
+      },
+      {
+        "start_sec": 105.0,
+        "end_sec": 108.0,
+        "arousal": 0.229,
+        "dominance": 0.2658,
+        "valence": 0.3091,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 108.0,
+        "end_sec": 111.0,
+        "arousal": 0.1676,
+        "dominance": 0.2038,
+        "valence": 0.1872,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 111.0,
+        "end_sec": 114.0,
+        "arousal": 0.1683,
+        "dominance": 0.1929,
+        "valence": 0.1659,
+        "energy_mode": "steady"
+      },
+      {
+        "start_sec": 114.0,
+        "end_sec": 114.52,
+        "arousal": 0.3078,
+        "dominance": 0.2978,
+        "valence": 0.2464,
+        "energy_mode": "drive"
+      }
+    ],
+    "segments": [
+      {
+        "energy_mode": "steady",
+        "start_sec": 0.0,
+        "end_sec": 39.0,
+        "duration_sec": 39.0,
+        "avg_arousal": 0.2194,
+        "avg_valence": 0.2128,
+        "avg_dominance": 0.2476
+      },
+      {
+        "energy_mode": "drive",
+        "start_sec": 39.0,
+        "end_sec": 48.0,
+        "duration_sec": 9.0,
+        "avg_arousal": 0.3016,
+        "avg_valence": 0.2582,
+        "avg_dominance": 0.3011
+      },
+      {
+        "energy_mode": "steady",
+        "start_sec": 48.0,
+        "end_sec": 51.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.2668,
+        "avg_valence": 0.3041,
+        "avg_dominance": 0.2946
+      },
+      {
+        "energy_mode": "drive",
+        "start_sec": 51.0,
+        "end_sec": 57.0,
+        "duration_sec": 6.0,
+        "avg_arousal": 0.3044,
+        "avg_valence": 0.3239,
+        "avg_dominance": 0.3273
+      },
+      {
+        "energy_mode": "tension",
+        "start_sec": 57.0,
+        "end_sec": 60.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.2859,
+        "avg_valence": 0.1849,
+        "avg_dominance": 0.2847
+      },
+      {
+        "energy_mode": "steady",
+        "start_sec": 60.0,
+        "end_sec": 66.0,
+        "duration_sec": 6.0,
+        "avg_arousal": 0.2424,
+        "avg_valence": 0.2255,
+        "avg_dominance": 0.2598
+      },
+      {
+        "energy_mode": "tension",
+        "start_sec": 66.0,
+        "end_sec": 69.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.3018,
+        "avg_valence": 0.1956,
+        "avg_dominance": 0.2992
+      },
+      {
+        "energy_mode": "drive",
+        "start_sec": 69.0,
+        "end_sec": 72.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.2698,
+        "avg_valence": 0.2772,
+        "avg_dominance": 0.2803
+      },
+      {
+        "energy_mode": "steady",
+        "start_sec": 72.0,
+        "end_sec": 75.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.2075,
+        "avg_valence": 0.2297,
+        "avg_dominance": 0.2464
+      },
+      {
+        "energy_mode": "tension",
+        "start_sec": 75.0,
+        "end_sec": 78.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.279,
+        "avg_valence": 0.1684,
+        "avg_dominance": 0.3057
+      },
+      {
+        "energy_mode": "drive",
+        "start_sec": 78.0,
+        "end_sec": 81.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.274,
+        "avg_valence": 0.3136,
+        "avg_dominance": 0.2982
+      },
+      {
+        "energy_mode": "steady",
+        "start_sec": 81.0,
+        "end_sec": 87.0,
+        "duration_sec": 6.0,
+        "avg_arousal": 0.1998,
+        "avg_valence": 0.2461,
+        "avg_dominance": 0.2461
+      },
+      {
+        "energy_mode": "drive",
+        "start_sec": 87.0,
+        "end_sec": 90.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.2876,
+        "avg_valence": 0.268,
+        "avg_dominance": 0.3041
+      },
+      {
+        "energy_mode": "steady",
+        "start_sec": 90.0,
+        "end_sec": 102.0,
+        "duration_sec": 12.0,
+        "avg_arousal": 0.2105,
+        "avg_valence": 0.2063,
+        "avg_dominance": 0.244
+      },
+      {
+        "energy_mode": "drive",
+        "start_sec": 102.0,
+        "end_sec": 105.0,
+        "duration_sec": 3.0,
+        "avg_arousal": 0.2776,
+        "avg_valence": 0.3026,
+        "avg_dominance": 0.2986
+      },
+      {
+        "energy_mode": "steady",
+        "start_sec": 105.0,
+        "end_sec": 114.0,
+        "duration_sec": 9.0,
+        "avg_arousal": 0.1883,
+        "avg_valence": 0.2207,
+        "avg_dominance": 0.2208
+      },
+      {
+        "energy_mode": "drive",
+        "start_sec": 114.0,
+        "end_sec": 114.52,
+        "duration_sec": 0.52,
+        "avg_arousal": 0.3078,
+        "avg_valence": 0.2464,
+        "avg_dominance": 0.2978
+      }
+    ],
+    "energy_mode_distribution_pct": {
+      "steady": 68.1,
+      "drive": 24.0,
+      "tension": 7.9
+    },
+    "arousal_arc": [
+      {
+        "time_sec": 0.0,
+        "arousal": 0.2459
+      },
+      {
+        "time_sec": 3.0,
+        "arousal": 0.2029
+      },
+      {
+        "time_sec": 6.0,
+        "arousal": 0.2205
+      },
+      {
+        "time_sec": 9.0,
+        "arousal": 0.2042
+      },
+      {
+        "time_sec": 12.0,
+        "arousal": 0.2262
+      },
+      {
+        "time_sec": 15.0,
+        "arousal": 0.1616
+      },
+      {
+        "time_sec": 18.0,
+        "arousal": 0.2042
+      },
+      {
+        "time_sec": 21.0,
+        "arousal": 0.235
+      },
+      {
+        "time_sec": 24.0,
+        "arousal": 0.2431
+      },
+      {
+        "time_sec": 27.0,
+        "arousal": 0.229
+      },
+      {
+        "time_sec": 30.0,
+        "arousal": 0.2652
+      },
+      {
+        "time_sec": 33.0,
+        "arousal": 0.1679
+      },
+      {
+        "time_sec": 36.0,
+        "arousal": 0.2466
+      },
+      {
+        "time_sec": 39.0,
+        "arousal": 0.2719
+      },
+      {
+        "time_sec": 42.0,
+        "arousal": 0.2975
+      },
+      {
+        "time_sec": 45.0,
+        "arousal": 0.3354
+      },
+      {
+        "time_sec": 48.0,
+        "arousal": 0.2668
+      },
+      {
+        "time_sec": 51.0,
+        "arousal": 0.3336
+      },
+      {
+        "time_sec": 54.0,
+        "arousal": 0.2751
+      },
+      {
+        "time_sec": 57.0,
+        "arousal": 0.2859
+      },
+      {
+        "time_sec": 60.0,
+        "arousal": 0.2431
+      },
+      {
+        "time_sec": 63.0,
+        "arousal": 0.2418
+      },
+      {
+        "time_sec": 66.0,
+        "arousal": 0.3018
+      },
+      {
+        "time_sec": 69.0,
+        "arousal": 0.2698
+      },
+      {
+        "time_sec": 72.0,
+        "arousal": 0.2075
+      },
+      {
+        "time_sec": 75.0,
+        "arousal": 0.279
+      },
+      {
+        "time_sec": 78.0,
+        "arousal": 0.274
+      },
+      {
+        "time_sec": 81.0,
+        "arousal": 0.2508
+      },
+      {
+        "time_sec": 84.0,
+        "arousal": 0.1488
+      },
+      {
+        "time_sec": 87.0,
+        "arousal": 0.2876
+      },
+      {
+        "time_sec": 90.0,
+        "arousal": 0.2423
+      },
+      {
+        "time_sec": 93.0,
+        "arousal": 0.2449
+      },
+      {
+        "time_sec": 96.0,
+        "arousal": 0.221
+      },
+      {
+        "time_sec": 99.0,
+        "arousal": 0.134
+      },
+      {
+        "time_sec": 102.0,
+        "arousal": 0.2776
+      },
+      {
+        "time_sec": 105.0,
+        "arousal": 0.229
+      },
+      {
+        "time_sec": 108.0,
+        "arousal": 0.1676
+      },
+      {
+        "time_sec": 111.0,
+        "arousal": 0.1683
+      },
+      {
+        "time_sec": 114.0,
+        "arousal": 0.3078
+      }
+    ]
+  }
+]

@@ -5,38 +5,45 @@
       "valence": "positive",
       "arousal": "high",
       "bpm": 120,
-      "files": ["drive-1.wav", "drive-2.wav", "drive-3.wav"],
-      "used_by": ["core", "tip", "highlight", "segment"],
+      "files": [
+        "drive-1.wav",
+        "drive-2.wav",
+        "drive-3.wav"
+      ],
+      "used_by": [
+        "core",
+        "tip",
+        "highlight",
+        "segment"
+      ],
       "description": "Positive high-energy. Confident, upbeat, forward momentum. For tips, demos, hot takes, founder segments.",
       "generation_prompt": "Upbeat confident electronic beat, positive energy, clean synths, driving rhythm, consistent tempo, modern and polished, stable percussion, no vocals, exactly 120 BPM"
-    },
-    {
-      "name": "tension",
-      "valence": "negative",
-      "arousal": "high",
-      "bpm": 120,
-      "files": ["tension-1.wav", "tension-2.wav", "tension-3.wav"],
-      "used_by": ["hook", "problem_solution", "narrative", "arc"],
-      "description": "Negative high-energy. Urgent, tense, dramatic. For hooks, breaking news, incidents, narrative tension.",
-      "generation_prompt": "Dark urgent electronic underscore, minor key, pulsing bass, tense atmosphere, serious and intense, consistent driving rhythm, stable percussion, no vocals, exactly 120 BPM"
     },
     {
       "name": "steady",
       "valence": "positive",
       "arousal": "low",
       "bpm": 80,
-      "files": ["steady-1.wav", "steady-2.wav", "steady-3.wav"],
-      "used_by": ["focused_tutorial", "deep_dive", "full_segment"],
+      "files": [
+        "steady-1.wav",
+        "steady-2.wav",
+        "steady-3.wav"
+      ],
+      "used_by": [
+        "focused_tutorial",
+        "deep_dive",
+        "full_segment"
+      ],
       "description": "Positive low-energy. Calm, unobtrusive, sits behind narration. For tutorials, deep dives, long-form.",
       "generation_prompt": "Calm ambient background music, warm pads, gentle and unobtrusive, positive but subtle, consistent soft rhythm, designed to sit behind narration, stable tempo, no vocals, exactly 80 BPM"
     }
   ],
   "research": [
-    "Having music matters more than which music — EEG shows attention increase vs silence regardless of tempo (PMC9713244)",
+    "Having music matters more than which music \u2014 EEG shows attention increase vs silence regardless of tempo (PMC9713244)",
     "Positive valence + high arousal = best retention and recall (PMC11045806)",
     "Stable rhythm drives positive emotions; flowing rhythm drives melancholy (PMC9644217)",
-    "Music regulates mood first, then arousal — mood precedes arousal in causal chain (PMC11045806)",
+    "Music regulates mood first, then arousal \u2014 mood precedes arousal in causal chain (PMC11045806)",
     "Custom-scored music can be less engaging than generic well-matched music (arxiv 2601.17893v1)",
-    "Drive and tension share 120 BPM for seamless cuts; steady at 80 BPM (2:3 ratio) for rhythmic compatibility"
+    "Drive at 120 BPM for seamless cuts; steady at 80 BPM (2:3 ratio) for rhythmic compatibility"
   ]
 }

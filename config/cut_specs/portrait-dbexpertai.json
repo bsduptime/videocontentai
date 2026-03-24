@@ -25,7 +25,7 @@
       "min_duration": 7,
       "max_duration": 15,
       "is_hook": true,
-      "mood_options": ["tension", "drive"],
+      "mood_options": ["silence", "drive"],
       "channels": ["Instagram Reel", "TikTok Video"],
       "motion": "Stories / Opinion",
       "editorial_lens": "Extract the single most surprising or provocative moment — a stat, a failure, a hot take. Must hook in the first frame."
@@ -44,7 +44,7 @@
       "min_duration": 30,
       "max_duration": 60,
       "prepend_hook": true,
-      "mood_options": ["tension", "drive"],
+      "mood_options": ["silence", "drive"],
       "channels": ["Facebook Reel", "Instagram Story", "YouTube Short"],
       "motion": "Teaching / Proof",
       "editorial_lens": "Pick a problem → solution → result segment. Should show a before/after or a demo with a visible outcome."
@@ -54,7 +54,7 @@
       "min_duration": 60,
       "max_duration": 120,
       "prepend_hook": true,
-      "mood_options": ["tension", "drive", "steady"],
+      "mood_options": ["silence", "drive", "steady"],
       "channels": ["Facebook Reel", "Facebook Story", "Instagram Reel", "TikTok Video", "YouTube Short"],
       "motion": "Teaching / Stories",
       "editorial_lens": "Pick a fuller narrative arc — explainer with a hook, or an incident story with tension and resolution. Needs strong opening to survive drop-off."

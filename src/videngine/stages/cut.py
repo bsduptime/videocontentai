@@ -10,7 +10,9 @@ import subprocess
 from pathlib import Path
 
 from ..config import Config
+from ..audio_preprocess import preprocess_audio
 from ..ffmpeg.commands import (
+    compress_audio,
     concat_segments,
     cut_segment,
     loudnorm_apply,
@@ -83,11 +85,50 @@ def run_cut(
                 str(concat_path), str(scaled_path), config.encoding, is_landscape
             )
             _run_ffmpeg(scale_cmd)
-            pre_norm_path = scaled_path
+            pre_denoise_path = scaled_path
         else:
-            pre_norm_path = concat_path
+            pre_denoise_path = concat_path
 
-        # Step 3.5: Loudness normalize (two-pass EBU R128, audio re-encode, video copy)
+        # Resolve audio profile (from cut spec or default to "macbook")
+        spec = specs_by_name.get(plan.spec_name)
+        audio_profile_name = getattr(spec, "audio_profile", "macbook") if spec else "macbook"
+        audio_profile = config.audio.get_profile(audio_profile_name)
+
+        # Step 3a: DeepFilterNet3 noise suppression (extract → denoise → replace)
+        if config.audio.denoise:
+            denoised_path = clip_dir / "denoised.mp4"
+            atten = audio_profile.denoise_atten_lim_db or None  # 0 = unlimited
+            try:
+                preprocess_audio(
+                    str(pre_denoise_path),
+                    str(denoised_path),
+                    str(clip_dir),
+                    atten_lim_db=atten,
+                )
+                logger.info("%-20s audio denoised (profile=%s)", plan.spec_name, audio_profile_name)
+                pre_compress_path = denoised_path
+            except Exception as e:
+                logger.warning("%-20s denoise failed, skipping: %s", plan.spec_name, e)
+                pre_compress_path = pre_denoise_path
+        else:
+            pre_compress_path = pre_denoise_path
+
+        # Step 3b: Dynamic compression (profile-specific settings)
+        compressed_path = clip_dir / "compressed.mp4"
+        compress_cmd = compress_audio(
+            str(pre_compress_path), str(compressed_path), config.encoding,
+            threshold_db=audio_profile.compress_threshold_db,
+            ratio=audio_profile.compress_ratio,
+            attack_ms=audio_profile.compress_attack_ms,
+            release_ms=audio_profile.compress_release_ms,
+            knee_db=audio_profile.compress_knee_db,
+            makeup_db=audio_profile.compress_makeup_db,
+        )
+        _run_ffmpeg(compress_cmd)
+        logger.info("%-20s audio compressed (profile=%s)", plan.spec_name, audio_profile_name)
+        pre_norm_path = compressed_path
+
+        # Step 3c: Loudness normalize (two-pass EBU R128, audio re-encode, video copy)
         normalized_path = clip_dir / "normalized.mp4"
         measurement = _normalize_loudness(
             str(pre_norm_path), str(normalized_path), config,

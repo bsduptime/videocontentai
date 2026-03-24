@@ -66,18 +66,17 @@ Compare the music mood (from cut plan) against the content's actual emotional to
 | Mood | Expected Content Tone | Misalignment Example |
 |------|----------------------|---------------------|
 | **drive** (positive/high arousal) | Confident, upbeat, forward momentum | Drive music under somber/serious content |
-| **tension** (negative/high arousal) | Urgent, dramatic, high stakes | Tension music under casual/friendly content |
+| **silence** (negative/high arousal beats) | Urgent, dramatic, high stakes | Music playing under problem statements or stakes (should be silent) |
 | **steady** (positive/low arousal) | Calm, educational, measured | Steady music under exciting/surprising content |
 
-**Misalignment is not always wrong** — tension + calm delivery = "something is wrong" (intentional unease). But **unintentional** misalignment is an ISSUE.
+**Misalignment is not always wrong** — silence + calm delivery = "something is wrong" (intentional unease). But **unintentional** misalignment is an ISSUE.
 
 ### How to Diagnose
 
 1. Read the cut plan's `mood` field
 2. Watch the clip and note the dominant emotional tone of the speech
 3. If the music mood contradicts the speech tone without clear creative intent, flag as ISSUE
-4. Check: does the music end on drive or steady (positive)? Ending on tension leaves the
-   viewer in an unresolved negative state — ISSUE unless intentional.
+4. Check: does the music end on drive or steady (positive)? Ending on silence is acceptable only if the final beat is immediately followed by a positive-mood re-entry.
 
 ---
 
