@@ -11,8 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .config import load_config
-from .models import JobState
-from .pipeline import Pipeline, load_spec_file, detect_spec_file
+from .pipeline import Pipeline
 from .storage import cleanup_jobs, get_latest_job, list_jobs
 
 # Convention directories (relative to project root)
@@ -45,7 +44,9 @@ console = Console()
 
 @app.command(name="pre-process")
 def pre_process(
-    slug: Annotated[str, typer.Argument(help="Video slug (directory name in video-content/input/)")],
+    slug: Annotated[
+        str, typer.Argument(help="Video slug (directory name in video-content/input/)")
+    ],
     config_file: Annotated[
         Optional[Path], typer.Option("--config", help="Path to config TOML file")
     ] = None,
@@ -75,31 +76,38 @@ def pre_process(
         console.print(f"[red]No video files found in {input_dir}[/red]")
         raise typer.Exit(1)
 
-    metadata_files = [f for f in sorted(input_dir.iterdir()) if f.suffix.lower() in {".md", ".json"}]
+    metadata_files = [
+        f for f in sorted(input_dir.iterdir()) if f.suffix.lower() in {".md", ".json"}
+    ]
 
     console.print(f"\n[bold]Pre-processing: {slug}[/bold]")
     console.print(f"  Videos: {len(video_files)}")
     console.print(f"  Metadata: {len(metadata_files)}")
 
     # --- Step 2: Probe & detect devices ---
-    from .ffmpeg.probe import probe as ffprobe, detect_recording_device
+    from .ffmpeg.probe import detect_recording_device
+    from .ffmpeg.probe import probe as ffprobe
 
     file_info: list[dict] = []
     for vf in video_files:
         info = ffprobe(str(vf))
         device = detect_recording_device(str(vf))
         size_mb = vf.stat().st_size / (1024 * 1024)
-        file_info.append({
-            "path": vf,
-            "name": vf.name,
-            "device": device,
-            "duration": info.duration,
-            "width": info.width,
-            "height": info.height,
-            "size_mb": size_mb,
-        })
+        file_info.append(
+            {
+                "path": vf,
+                "name": vf.name,
+                "device": device,
+                "duration": info.duration,
+                "width": info.width,
+                "height": info.height,
+                "size_mb": size_mb,
+            }
+        )
         mins, secs = divmod(int(info.duration), 60)
-        console.print(f"  [cyan]{vf.name}[/cyan]: {device} | {mins}:{secs:02d} | {info.width}x{info.height} | {size_mb:.0f}MB")
+        console.print(
+            f"  [cyan]{vf.name}[/cyan]: {device} | {mins}:{secs:02d} | {info.width}x{info.height} | {size_mb:.0f}MB"
+        )
 
     # --- Step 3: Create production directory ---
     prod_dir.mkdir(parents=True, exist_ok=True)
@@ -112,10 +120,10 @@ def pre_process(
         console.print(f"  Copied metadata: {mf.name}")
 
     # --- Step 4: Audio preprocessing ---
-    console.print(f"\n[bold]Audio preprocessing...[/bold]")
+    console.print("\n[bold]Audio preprocessing...[/bold]")
 
     from .audio_preprocess import preprocess_audio
-    from .ffmpeg.commands import compress_audio, loudnorm_measure, loudnorm_apply
+    from .ffmpeg.commands import compress_audio, loudnorm_apply, loudnorm_measure
 
     processed_files: list[dict] = []
     for fi in file_info:
@@ -132,15 +140,18 @@ def pre_process(
         # Step 4a: DeepFilterNet denoise
         denoised_path = str(work_dir / f"{vf.stem}_denoised{vf.suffix}")
         atten = profile.denoise_atten_lim_db if profile.denoise_atten_lim_db != 0 else None
-        console.print(f"    Denoising...")
+        console.print("    Denoising...")
         preprocess_audio(str(vf), denoised_path, str(work_dir), atten_lim_db=atten)
 
         # Step 4b: Compress
         compressed_path = str(work_dir / f"{vf.stem}_compressed{vf.suffix}")
-        console.print(f"    Compressing...")
+        console.print("    Compressing...")
         import subprocess
+
         cmd = compress_audio(
-            denoised_path, compressed_path, config.encoding,
+            denoised_path,
+            compressed_path,
+            config.encoding,
             threshold_db=profile.compress_threshold_db,
             ratio=profile.compress_ratio,
             attack_ms=profile.compress_attack_ms,
@@ -154,7 +165,7 @@ def pre_process(
             raise typer.Exit(1)
 
         # Step 4c: Two-pass loudnorm
-        console.print(f"    Loudnorm pass 1 (measuring)...")
+        console.print("    Loudnorm pass 1 (measuring)...")
         measure_cmd = loudnorm_measure(compressed_path)
         result = subprocess.run(measure_cmd, capture_output=True, text=True)
         if result.returncode != 0:
@@ -163,16 +174,19 @@ def pre_process(
 
         # Parse loudnorm JSON from stderr
         import re
+
         json_match = re.search(r'\{[^{}]*"input_i"[^{}]*\}', result.stderr, re.DOTALL)
         if not json_match:
-            console.print(f"    [red]Could not parse loudnorm stats[/red]")
+            console.print("    [red]Could not parse loudnorm stats[/red]")
             raise typer.Exit(1)
         stats = json.loads(json_match.group())
 
         output_path = str(prod_dir / vf.name)
-        console.print(f"    Loudnorm pass 2 (applying)...")
+        console.print("    Loudnorm pass 2 (applying)...")
         apply_cmd = loudnorm_apply(
-            compressed_path, output_path, config.encoding,
+            compressed_path,
+            output_path,
+            config.encoding,
             measured_i=float(stats["input_i"]),
             measured_tp=float(stats["input_tp"]),
             measured_lra=float(stats["input_lra"]),
@@ -188,8 +202,9 @@ def pre_process(
         processed_files.append({**fi, "output": output_path})
 
     # --- Step 5: Transcribe ---
-    console.print(f"\n[bold]Transcribing...[/bold]")
+    console.print("\n[bold]Transcribing...[/bold]")
 
+    from .models import Transcript
     from .stages.transcribe import run_transcribe
 
     transcript_info: list[dict] = []
@@ -198,26 +213,57 @@ def pre_process(
         stem = Path(name).stem
         output_video = pf["output"]
 
-        console.print(f"  [cyan]{name}[/cyan]...")
         transcript_work_dir = str(prod_dir / "transcripts" / stem)
         Path(transcript_work_dir).mkdir(parents=True, exist_ok=True)
 
-        transcript = run_transcribe(output_video, transcript_work_dir, config)
+        # Check for existing transcript from /pull-input (in the input slug dir)
+        existing_transcript = input_dir / f"{stem}.transcript.json"
+        target_transcript = Path(transcript_work_dir) / "transcript.json"
 
-        word_count = sum(len(seg.words) for seg in transcript.segments)
-        mins, secs = divmod(int(transcript.duration_seconds), 60)
-        console.print(f"    [green]✅ {word_count} words | {mins}:{secs:02d} | {transcript.language}[/green]")
+        if existing_transcript.exists():
+            transcript = Transcript.model_validate_json(existing_transcript.read_text())
+            # Copy into the standard transcript location
+            if not target_transcript.exists():
+                shutil.copy2(str(existing_transcript), str(target_transcript))
+            # Also extract audio (needed by later stages) even when skipping transcription
+            from .ffmpeg.commands import extract_audio as _extract_audio
 
-        transcript_info.append({
-            "file": name,
-            "transcript_path": f"transcripts/{stem}/transcript.json",
-            "words": word_count,
-            "duration": transcript.duration_seconds,
-            "language": transcript.language,
-        })
+            audio_path = Path(transcript_work_dir) / "audio.wav"
+            if not audio_path.exists():
+                import subprocess as _sp
+
+                _sp.run(
+                    _extract_audio(output_video, str(audio_path)), capture_output=True, text=True
+                )
+            word_count = sum(len(seg.words) for seg in transcript.segments)
+            mins, secs = divmod(int(transcript.duration_seconds), 60)
+            console.print(
+                f"  [cyan]{name}[/cyan]: [dim]existing transcript found, skipping whisper[/dim]"
+            )
+            console.print(
+                f"    [green]✅ {word_count} words | {mins}:{secs:02d} | {transcript.language}[/green]"
+            )
+        else:
+            console.print(f"  [cyan]{name}[/cyan]...")
+            transcript = run_transcribe(output_video, transcript_work_dir, config)
+            word_count = sum(len(seg.words) for seg in transcript.segments)
+            mins, secs = divmod(int(transcript.duration_seconds), 60)
+            console.print(
+                f"    [green]✅ {word_count} words | {mins}:{secs:02d} | {transcript.language}[/green]"
+            )
+
+        transcript_info.append(
+            {
+                "file": name,
+                "transcript_path": f"transcripts/{stem}/transcript.json",
+                "words": word_count,
+                "duration": transcript.duration_seconds,
+                "language": transcript.language,
+            }
+        )
 
     # --- Step 6: Update manifest ---
-    console.print(f"\n[bold]Updating manifest...[/bold]")
+    console.print("\n[bold]Updating manifest...[/bold]")
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     manifest_path = prod_dir / "manifest.md"
@@ -227,9 +273,15 @@ def pre_process(
         manifest = manifest_path.read_text()
 
         # Tick the first 3 checkboxes
-        manifest = manifest.replace("- [ ] Raw files received", f"- [x] Raw files received ✅ {now}", 1)
-        manifest = manifest.replace("- [ ] Audio pre-processing", f"- [x] Audio pre-processing ✅ {now}", 1)
-        manifest = manifest.replace("- [ ] Transcription complete", f"- [x] Transcription complete ✅ {now}", 1)
+        manifest = manifest.replace(
+            "- [ ] Raw files received", f"- [x] Raw files received ✅ {now}", 1
+        )
+        manifest = manifest.replace(
+            "- [ ] Audio pre-processing", f"- [x] Audio pre-processing ✅ {now}", 1
+        )
+        manifest = manifest.replace(
+            "- [ ] Transcription complete", f"- [x] Transcription complete ✅ {now}", 1
+        )
         # Also handle alternate checkbox text
         manifest = manifest.replace("- [ ] Transcription", f"- [x] Transcription ✅ {now}", 1)
     else:
@@ -250,7 +302,11 @@ def pre_process(
             beats_table += "|------|------|-----------|------------|--------|\n"
             for beat in sidecar_data["beats"]:
                 vad = beat.get("vad", {})
-                vad_str = f"V{vad.get('v', 0):.2f} A{vad.get('a', 0):.2f} D{vad.get('d', 0):.2f}" if vad else "—"
+                vad_str = (
+                    f"V{vad.get('v', 0):.2f} A{vad.get('a', 0):.2f} D{vad.get('d', 0):.2f}"
+                    if vad
+                    else "—"
+                )
                 beats_table += f"| {beat.get('number', '?')} | {beat.get('name', '?')} | {beat.get('source_type', '?')} | {vad_str} | ⬜ awaiting scene match |\n"
 
         manifest = f"""# Production Manifest: {slug}
@@ -277,7 +333,9 @@ def pre_process(
     files_table += "|------|--------|----------|------|\n"
     for fi in file_info:
         mins, secs = divmod(int(fi["duration"]), 60)
-        files_table += f"| {fi['name']} | {fi['device']} | {mins}:{secs:02d} | {fi['size_mb']:.0f}MB |\n"
+        files_table += (
+            f"| {fi['name']} | {fi['device']} | {mins}:{secs:02d} | {fi['size_mb']:.0f}MB |\n"
+        )
 
     audio_table = "\n## Audio Processing\n\n"
     audio_table += "| File | Profile | Denoise | Compress | Loudnorm |\n"
@@ -300,7 +358,7 @@ def pre_process(
     ]:
         if section_header in manifest:
             # Replace existing section up to the next ## or end of file
-            pattern = re.escape(section_header) + r'.*?(?=\n## |\Z)'
+            pattern = re.escape(section_header) + r".*?(?=\n## |\Z)"
             manifest = re.sub(pattern, section_content.strip(), manifest, count=1, flags=re.DOTALL)
         else:
             manifest += section_content
@@ -320,18 +378,20 @@ def pre_process(
     console.print(f"  Files processed: {len(video_files)}")
     console.print(f"  Devices: {', '.join(devices)}")
     console.print(f"  Total words: {total_words}")
-    console.print(f"\n  Pipeline status:")
-    console.print(f"  [green]✅ Ingest[/green]")
-    console.print(f"  [green]✅ Audio pre-processing[/green]")
-    console.print(f"  [green]✅ Transcription[/green]")
-    console.print(f"  [dim]⬜ Scene matching (next step)[/dim]")
+    console.print("\n  Pipeline status:")
+    console.print("  [green]✅ Ingest[/green]")
+    console.print("  [green]✅ Audio pre-processing[/green]")
+    console.print("  [green]✅ Transcription[/green]")
+    console.print("  [dim]⬜ Scene matching (next step)[/dim]")
     console.print(f"\n  Production: {prod_dir}/")
     console.print(f"  Manifest:   {manifest_path}")
 
 
 @app.command(name="cut-beats")
 def cut_beats(
-    slug: Annotated[str, typer.Argument(help="Video slug (directory name in video-content/production/)")],
+    slug: Annotated[
+        str, typer.Argument(help="Video slug (directory name in video-content/production/)")
+    ],
     config_file: Annotated[
         Optional[Path], typer.Option("--config", help="Path to config TOML file")
     ] = None,
@@ -347,7 +407,6 @@ def cut_beats(
     7. Run VAD + emotion2vec analysis on each beat
     """
     import json
-    import re
     import subprocess
     from datetime import datetime
 
@@ -363,7 +422,7 @@ def cut_beats(
         raise typer.Exit(1)
 
     if not beat_map_path.exists():
-        console.print(f"[red]beat_map.json not found — run scene matching first[/red]")
+        console.print("[red]beat_map.json not found — run scene matching first[/red]")
         raise typer.Exit(1)
 
     beat_map = json.loads(beat_map_path.read_text())
@@ -371,7 +430,7 @@ def cut_beats(
     console.print(f"  Beats in map: {len(beat_map)}")
 
     # --- Step 5: Cut beats ---
-    console.print(f"\n[bold]Step 5: Cutting beats...[/bold]")
+    console.print("\n[bold]Step 5: Cutting beats...[/bold]")
 
     from .ffmpeg.commands import cut_segment
 
@@ -394,17 +453,19 @@ def cut_beats(
 
             duration = take["end"] - take["start"]
             console.print(f"  [green]✅ {out_name}[/green] ({duration:.1f}s)")
-            cut_files.append({
-                "beat": beat_num,
-                "name": beat_name,
-                "take": take_idx,
-                "file": out_name,
-                "path": out_path,
-                "duration": duration,
-            })
+            cut_files.append(
+                {
+                    "beat": beat_num,
+                    "name": beat_name,
+                    "take": take_idx,
+                    "file": out_name,
+                    "path": out_path,
+                    "duration": duration,
+                }
+            )
 
     # --- Step 6: Re-transcribe each beat ---
-    console.print(f"\n[bold]Step 6: Transcribing beats...[/bold]")
+    console.print("\n[bold]Step 6: Transcribing beats...[/bold]")
 
     from .stages.transcribe import run_transcribe
 
@@ -419,7 +480,7 @@ def cut_beats(
         console.print(f"  [green]✅ {cf['file']}[/green]: {word_count} words")
 
     # --- Step 7: VAD + emotion2vec ---
-    console.print(f"\n[bold]Step 7: VAD + emotion2vec scoring...[/bold]")
+    console.print("\n[bold]Step 7: VAD + emotion2vec scoring...[/bold]")
 
     # Run VAD analysis via the standalone script (loads model once for all files)
     beat_paths = [cf["path"] for cf in cut_files]
@@ -427,7 +488,9 @@ def cut_beats(
     console.print(f"  Running VAD analysis on {len(beat_paths)} files...")
     vad_result = subprocess.run(
         ["python", "scripts/vad_analyze.py"] + beat_paths,
-        capture_output=True, text=True, cwd=str(Path(__file__).parent.parent.parent),
+        capture_output=True,
+        text=True,
+        cwd=str(Path(__file__).parent.parent.parent),
     )
     if vad_result.returncode != 0:
         console.print(f"  [red]VAD analysis failed: {vad_result.stderr[-300:]}[/red]")
@@ -450,7 +513,9 @@ def cut_beats(
     console.print(f"\n  Running emotion2vec analysis on {len(beat_paths)} files...")
     emo_result = subprocess.run(
         ["python", "scripts/emotion2vec_analyze.py"] + beat_paths,
-        capture_output=True, text=True, cwd=str(Path(__file__).parent.parent.parent),
+        capture_output=True,
+        text=True,
+        cwd=str(Path(__file__).parent.parent.parent),
     )
     if emo_result.returncode != 0:
         console.print(f"  [red]emotion2vec analysis failed: {emo_result.stderr[-300:]}[/red]")
@@ -473,14 +538,16 @@ def cut_beats(
     analysis_path.write_text(json.dumps(cut_files, indent=2, default=str))
 
     # --- Update manifest ---
-    console.print(f"\n[bold]Updating manifest...[/bold]")
+    console.print("\n[bold]Updating manifest...[/bold]")
     manifest_path = prod_dir / "manifest.md"
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     if manifest_path.exists():
         manifest = manifest_path.read_text()
         manifest = manifest.replace("- [ ] Beat cuts", f"- [x] Beat cuts ✅ {now}", 1)
-        manifest = manifest.replace("- [ ] Beat transcription", f"- [x] Beat transcription ✅ {now}", 1)
+        manifest = manifest.replace(
+            "- [ ] Beat transcription", f"- [x] Beat transcription ✅ {now}", 1
+        )
         manifest = manifest.replace("- [ ] VAD scoring", f"- [x] VAD scoring ✅ {now}", 1)
         manifest_path.write_text(manifest)
 
@@ -488,25 +555,28 @@ def cut_beats(
     console.print(f"\n[bold green]{'═' * 50}[/bold green]")
     console.print(f"[bold]Beat Processing Complete: {slug}[/bold]\n")
     console.print(f"  Beats cut: {len(cut_files)}")
-    console.print(f"  All transcribed: ✅")
-    console.print(f"  All VAD scored: ✅")
-    console.print(f"  All emotion scored: ✅")
-    console.print(f"\n  Pipeline status:")
-    console.print(f"  [green]✅ Beat cuts[/green]")
-    console.print(f"  [green]✅ Beat transcription[/green]")
-    console.print(f"  [green]✅ VAD + emotion2vec scoring[/green]")
-    console.print(f"  [dim]⬜ Delivery comparison + readiness (next: agent)[/dim]")
+    console.print("  All transcribed: ✅")
+    console.print("  All VAD scored: ✅")
+    console.print("  All emotion scored: ✅")
+    console.print("\n  Pipeline status:")
+    console.print("  [green]✅ Beat cuts[/green]")
+    console.print("  [green]✅ Beat transcription[/green]")
+    console.print("  [green]✅ VAD + emotion2vec scoring[/green]")
+    console.print("  [dim]⬜ Delivery comparison + readiness (next: agent)[/dim]")
     console.print(f"\n  Beat analysis: {analysis_path}")
 
 
 @app.command()
 def cut(
     brand: Annotated[
-        Optional[str], typer.Option(help="Brand: dbexpertai or founder (overrides subdir detection)")
+        Optional[str],
+        typer.Option(help="Brand: dbexpertai or founder (overrides subdir detection)"),
     ] = None,
     no_voice: Annotated[bool, typer.Option("--no-voice", help="Skip voice cloning")] = False,
     review: Annotated[bool, typer.Option(help="Pause after AI analysis for review")] = False,
-    dry_run: Annotated[bool, typer.Option("--dry-run", help="Show what would run without executing")] = False,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Show what would run without executing")
+    ] = False,
     config_file: Annotated[
         Optional[Path], typer.Option("--config", help="Path to config TOML file")
     ] = None,
@@ -557,6 +627,7 @@ def cut(
         try:
             # Detect aspect ratio → pick spec file
             from .ffmpeg.probe import probe
+
             info = probe(str(in_progress_path))
             aspect = "16:9" if info.width >= info.height else "9:16"
 
@@ -598,17 +669,21 @@ def process(
     video: Annotated[Path, typer.Argument(help="Path to source video file")],
     project: Annotated[str, typer.Option(help="Project name for organization")] = "",
     specs: Annotated[
-        Optional[Path], typer.Option("--specs", help="Path to JSON file with cut specs (auto-detects from source aspect ratio if omitted)")
+        Optional[Path],
+        typer.Option(
+            "--specs",
+            help="Path to JSON file with cut specs (auto-detects from source aspect ratio if omitted)",
+        ),
     ] = None,
     no_voice: Annotated[bool, typer.Option("--no-voice", help="Skip voice cloning")] = False,
     review: Annotated[bool, typer.Option(help="Pause after AI analysis for review")] = False,
-    model: Annotated[
-        Optional[str], typer.Option(help="Override AI model")
-    ] = None,
+    model: Annotated[Optional[str], typer.Option(help="Override AI model")] = None,
     keep_intermediates: Annotated[
         bool, typer.Option("--keep-intermediates", help="Keep intermediate files")
     ] = False,
-    dry_run: Annotated[bool, typer.Option("--dry-run", help="Show what would run without executing")] = False,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Show what would run without executing")
+    ] = False,
     config_file: Annotated[
         Optional[Path], typer.Option("--config", help="Path to config TOML file")
     ] = None,
@@ -642,9 +717,7 @@ def process(
 
 @app.command()
 def resume(
-    job_id: Annotated[
-        Optional[str], typer.Argument(help="Job ID to resume")
-    ] = None,
+    job_id: Annotated[Optional[str], typer.Argument(help="Job ID to resume")] = None,
     latest: Annotated[bool, typer.Option("--latest", help="Resume most recent job")] = False,
     config_file: Annotated[
         Optional[Path], typer.Option("--config", help="Path to config TOML file")

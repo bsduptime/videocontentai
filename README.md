@@ -75,6 +75,9 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 For the David K content pipeline, videngine handles post-production:
 
 ```bash
+# Step 0: Pull recordings from NAS, transcribe, auto-sort into slugs
+# Use /pull-input in Claude Code
+
 # Step 1-3: Ingest + audio preprocessing + transcription (mechanical)
 videngine pre-process {slug}
 
@@ -83,17 +86,24 @@ videngine cut-beats {slug}
 
 # Full pipeline with agent (scene matching + readiness report):
 # Use /check-readiness {slug} in Claude Code
+
+# Push finished output to NAS for team review:
+# Use /push-output {slug} in Claude Code
 ```
 
 **Directory structure:**
 ```
 video-content/
-  input/{slug}/        ← drop raw files + script + sidecar here
+  input/_inbox/        ← staging area for NAS pulls (transient)
+  input/_unsorted/     ← recordings that couldn't be matched to a script
+  input/{slug}/        ← raw files + script + sidecar (ready for pre-process)
   production/{slug}/   ← processing workspace (wiped on each run)
   output/{slug}/       ← finished exports
 ```
 
-See `.claude/commands/check-readiness.md` for the full agent-orchestrated pipeline.
+**`/pull-input`** pulls videos from the Synology NAS (`ssh nas`), transcribes with Whisper, matches transcripts against coached scripts in `~/code/content/`, and sorts files into the correct slug directory. If `pre-process` finds a `.transcript.json` file alongside a video, it skips re-transcription.
+
+See `.claude/commands/pull-input.md` and `.claude/commands/check-readiness.md` for agent-orchestrated pipelines.
 
 ## Usage
 
