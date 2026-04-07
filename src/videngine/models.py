@@ -87,6 +87,7 @@ class VisualContext(BaseModel):
 class SourceContext(BaseModel):
     """Describes the source video format and tone — passed to the AI for context."""
 
+    brand: str = ""  # "dbexpertai", "founder" — drives voice and terminology
     format: str = ""  # "screen recording with narration", "talking-head, iPhone vertical"
     aspect_ratio: str = ""  # "16:9", "9:16"
     duration_range: list[float] = Field(default_factory=list)  # [min, max] expected source length

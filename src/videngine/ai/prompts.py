@@ -11,9 +11,11 @@ if TYPE_CHECKING:
 # --- Phase 1: Transcript Analysis ---
 
 ANALYSIS_SYSTEM_PROMPT = """\
-You are an expert video editor and content strategist for a tech founder's social media presence.
+You are an expert video editor and content strategist.
 
 Your job: Given a transcript with word-level timestamps, analyze and score EVERY segment on editorial criteria. This scoring will be used downstream to select segments for multiple content formats (hooks, reels, YouTube videos, etc.).
+
+When brand context is provided, use it to calibrate scoring — segments that align with the brand's voice, terminology, and audience should score higher than generic content.
 
 ## Scoring Criteria (1-10 scale)
 
@@ -62,15 +64,18 @@ def build_analysis_user_prompt(
 ) -> str:
     """Build the user prompt for transcript analysis."""
     source_block = ""
-    if source_context and (source_context.format or source_context.tone):
+    if source_context:
         parts = []
+        if source_context.brand:
+            parts.append(f"- Brand: {source_context.brand}")
         if source_context.format:
             parts.append(f"- Source format: {source_context.format}")
         if source_context.tone:
             parts.append(f"- Tone: {source_context.tone}")
         if source_context.aspect_ratio:
             parts.append(f"- Aspect ratio: {source_context.aspect_ratio}")
-        source_block = "\nSource context:\n" + "\n".join(parts) + "\n"
+        if parts:
+            source_block = "\nSource context:\n" + "\n".join(parts) + "\n"
 
     visual_block = ""
     if visual_text:
@@ -95,7 +100,9 @@ You are an expert video editor creating a specific content cut from pre-scored t
 You will receive:
 1. A scored analysis of all transcript segments (with scores, tags, topics)
 2. A cut spec defining the target format (duration range, channels, editorial lens)
-3. Source context describing the original video's format and tone
+3. Source context describing the original video's brand, format, and tone
+
+When brand context is provided, use it to shape your editorial choices — segment selection, narration voice, and terminology should match the brand identity.
 
 Your job: Select the best segments for this specific format, order them for narrative flow, and explain what was dropped and why.
 
@@ -127,9 +134,10 @@ Return your choice in the `mood` field. Consider the content's tone: a triumphan
 
 ## Narration Guidelines
 
-- **Intro**: 1-2 sentences. Hook the viewer. Tease the best insight. First person as the founder.
+- **Intro**: 1-2 sentences. Hook the viewer. Tease the best insight. First person.
 - **Outro**: 1-2 sentences. Summarize the key takeaway. Include a call to action. First person.
 - Keep narration punchy — each should be under 10 seconds when spoken.
+- Match the brand's voice and terminology — narration should sound like it comes from the same person.
 - For hook specs: leave narration empty (hooks don't get intro/outro).
 
 ## Visual Context
@@ -160,13 +168,16 @@ def build_selection_user_prompt(
     angle = cut_spec_dict.get("content_angle", "")
 
     source_block = ""
-    if source_context and (source_context.format or source_context.tone):
+    if source_context:
         parts = []
+        if source_context.brand:
+            parts.append(f"- Brand: {source_context.brand}")
         if source_context.format:
             parts.append(f"- Source format: {source_context.format}")
         if source_context.tone:
             parts.append(f"- Tone: {source_context.tone}")
-        source_block = "\nSource context:\n" + "\n".join(parts) + "\n"
+        if parts:
+            source_block = "\nSource context:\n" + "\n".join(parts) + "\n"
 
     visual_block = ""
     if visual_text:

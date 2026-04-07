@@ -20,17 +20,10 @@ Single-cut pipeline: transcribe → AI analysis → voice clone → assemble →
 
 One long video → suite of platform-optimized clips at different lengths.
 
-- [ ] Multi-cut analyze stage: Claude plans all cuts in one pass
-  - YouTube long (3-10 min, 16:9)
-  - YouTube Short (30-60s, 9:16)
-  - Reel (30-60s, 9:16) — Instagram, Facebook, TikTok
-  - LinkedIn (60-120s, 4:5)
-  - X clip (30-90s, 16:9)
-  - Story (15-30s, 9:16)
-- [ ] Platform-aware render specs from MEDIA-SPECS (codec, bitrate, resolution per platform)
-- [ ] Brand-aware AI prompt (voice/tone, terminology, content motions from brand skill)
-- [ ] Per-cut editorial lens (hook-heavy for reels, narrative for YouTube, insight for LinkedIn)
-- [ ] Cut-level intro/outro narration (different scripts per cut)
+- [x] Multi-cut analyze stage: Claude scores once, then plans each cut spec independently
+- [x] Per-cut editorial lens (editorial_lens field per cut spec, passed to Claude)
+- [x] Cut-level intro/outro narration planning (Claude generates narration text per cut)
+- [ ] Brand-aware AI prompt (brand name, voice/tone, terminology in selection prompt)
 
 ## Phase 3 — Thumbnails + Visual Assets
 

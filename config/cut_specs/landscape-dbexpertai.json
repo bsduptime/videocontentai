@@ -14,6 +14,7 @@
     }
   },
   "source": {
+    "brand": "dbexpertai",
     "format": "screen recording with narration, tutorial or deep dive",
     "aspect_ratio": "16:9",
     "duration_range": [600, 2700],
