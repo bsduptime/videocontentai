@@ -72,19 +72,23 @@ def run_thumbnail(
         concept_path.write_text(concept.model_dump_json(indent=2))
         logger.info("Thumbnail concept for %s: %s", plan.spec_name, concept.hook_text)
 
-        # 2. Generate base image (Flux API or fallback)
-        use_flux = (
-            not config.thumbnail.fallback_only
-            and os.environ.get("BFL_API_KEY")
-            and face_ref is not None
-        )
+        # 2. Generate base image: ComfyUI local → Flux cloud API → Pillow fallback
+        base = None
+        if not config.thumbnail.fallback_only:
+            # Try local ComfyUI first (free, ~24s)
+            base = _generate_comfyui_image(concept, config)
+            if base:
+                logger.info("Generated base image via local ComfyUI for %s", plan.spec_name)
 
-        if use_flux:
-            base = _generate_base_image(concept, face_ref, config)
-            if base is None:
-                logger.warning("Flux API failed for %s, using fallback", plan.spec_name)
-                base = _fallback_base_image(concept, face_ref, template)
-        else:
+            # Fall back to Flux Kontext cloud API
+            if base is None and os.environ.get("BFL_API_KEY") and face_ref is not None:
+                base = _generate_base_image(concept, face_ref, config)
+                if base:
+                    logger.info("Generated base image via Flux API for %s", plan.spec_name)
+
+        # Final fallback: Pillow gradient + face composite
+        if base is None:
+            logger.info("Using Pillow fallback for %s", plan.spec_name)
             base = _fallback_base_image(concept, face_ref, template)
 
         base.save(spec_dir / "base_image.png")
@@ -116,6 +120,132 @@ def _generate_concept(
 
 
 # --- Image generation ---
+
+
+def _generate_comfyui_image(
+    concept: ThumbnailConcept,
+    config: Config,
+) -> Image.Image | None:
+    """Generate base image via local ComfyUI + Flux Schnell."""
+    import io
+
+    url = config.thumbnail.comfyui_url
+
+    # Check if ComfyUI is reachable
+    try:
+        resp = httpx.get(f"{url}/system_stats", timeout=5.0)
+        if resp.status_code != 200:
+            return None
+    except Exception:
+        logger.debug("ComfyUI not reachable at %s", url)
+        return None
+
+    # Build Flux Schnell workflow
+    workflow = {
+        "3": {
+            "class_type": "UNETLoader",
+            "inputs": {
+                "unet_name": "flux1-schnell.safetensors",
+                "weight_dtype": "fp8_e4m3fn",
+            },
+        },
+        "4": {
+            "class_type": "DualCLIPLoader",
+            "inputs": {
+                "clip_name1": "clip_l.safetensors",
+                "clip_name2": "t5xxl_fp8_e4m3fn.safetensors",
+                "type": "flux",
+            },
+        },
+        "5": {
+            "class_type": "VAELoader",
+            "inputs": {"vae_name": "ae.safetensors"},
+        },
+        "6": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": concept.flux_prompt, "clip": ["4", 0]},
+        },
+        "7": {
+            "class_type": "EmptyLatentImage",
+            "inputs": {"width": YOUTUBE_SIZE[0], "height": YOUTUBE_SIZE[1], "batch_size": 1},
+        },
+        "8": {
+            "class_type": "KSampler",
+            "inputs": {
+                "model": ["3", 0],
+                "positive": ["6", 0],
+                "negative": ["6", 0],
+                "latent_image": ["7", 0],
+                "seed": hash(concept.hook_text) % 2**32,
+                "steps": 4,
+                "cfg": 1.0,
+                "sampler_name": "euler",
+                "scheduler": "simple",
+                "denoise": 1.0,
+            },
+        },
+        "9": {
+            "class_type": "VAEDecode",
+            "inputs": {"samples": ["8", 0], "vae": ["5", 0]},
+        },
+        "10": {
+            "class_type": "SaveImage",
+            "inputs": {"images": ["9", 0], "filename_prefix": "videngine_thumb"},
+        },
+    }
+
+    try:
+        with httpx.Client(timeout=600.0) as http:
+            # Queue the prompt
+            resp = http.post(
+                f"{url}/prompt",
+                json={"prompt": workflow},
+                headers={"Content-Type": "application/json"},
+            )
+            resp.raise_for_status()
+            prompt_id = resp.json()["prompt_id"]
+            logger.info("ComfyUI prompt queued: %s", prompt_id)
+
+            # Poll for completion (model load can take minutes on cold start)
+            for _ in range(120):  # up to 10 minutes
+                time.sleep(5)
+                hist_resp = http.get(f"{url}/history/{prompt_id}")
+                hist_resp.raise_for_status()
+                history = hist_resp.json()
+
+                if prompt_id not in history:
+                    continue
+
+                status = history[prompt_id].get("status", {})
+                if status.get("status_str") == "error":
+                    logger.error("ComfyUI generation failed: %s", status.get("messages", ""))
+                    return None
+
+                outputs = history[prompt_id].get("outputs", {})
+                if "10" in outputs:
+                    images = outputs["10"].get("images", [])
+                    if not images:
+                        return None
+
+                    # Fetch the generated image via ComfyUI's view endpoint
+                    img_info = images[0]
+                    view_resp = http.get(
+                        f"{url}/view",
+                        params={
+                            "filename": img_info["filename"],
+                            "subfolder": img_info.get("subfolder", ""),
+                            "type": img_info.get("type", "output"),
+                        },
+                    )
+                    view_resp.raise_for_status()
+                    return Image.open(io.BytesIO(view_resp.content)).convert("RGB")
+
+            logger.error("ComfyUI timed out after 10 minutes")
+            return None
+
+    except Exception:
+        logger.exception("ComfyUI error")
+        return None
 
 
 def _generate_base_image(

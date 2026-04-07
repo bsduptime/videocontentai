@@ -101,10 +101,11 @@ class EncodingConfig:
 @dataclass
 class ThumbnailConfig:
     enabled: bool = True
-    flux_api_url: str = "https://api.bfl.ai/v1/flux-kontext"
+    comfyui_url: str = "http://localhost:8188"  # Local ComfyUI (preferred)
+    flux_api_url: str = "https://api.bfl.ai/v1/flux-kontext"  # Cloud fallback
     face_reference_dir: str = "assets/faces"
     fonts_dir: str = "assets/fonts"
-    fallback_only: bool = False  # Force Pillow-only mode (no Flux API)
+    fallback_only: bool = False  # Force Pillow-only mode (no image gen)
 
 
 @dataclass
