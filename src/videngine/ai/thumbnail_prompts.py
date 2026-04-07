@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..models import CutPlan, SourceContext
+    from ..models import CutPlan, SourceContext, ThumbnailTemplate
 
 THUMBNAIL_SYSTEM_PROMPT = """\
 You are an expert YouTube thumbnail designer specializing in tech and educational content.
@@ -37,10 +37,10 @@ looking LEFT toward the text and visuals (~30%), hook text upper-left. The face'
 directs the viewer's eyes toward the key visual elements and text. \
 Never place important elements in the bottom-right (timestamp zone) or bottom edge (progress bar).
 
-6. **Flux prompt**: Describe the scene with a man on the RIGHT side of frame. Include \
-the person's positioning (right side, looking slightly left toward visuals), expression \
-(determined, focused, intense), and the tech visual elements on the left/center. \
-Do NOT describe text overlays — those are rendered programmatically. \
+6. **Flux prompt**: Describe the full scene. When a person description is provided, \
+include it verbatim in your prompt. Place tech visuals (logos, diagrams) in the \
+bottom-left area since text goes upper-left. Keep the upper-left area clean/dark \
+for text overlay. Do NOT describe text overlays — those are rendered programmatically. \
 Style should be professional, modern, cinematic lighting, high contrast, dark background.
 
 ## For tech/database content specifically
@@ -55,6 +55,7 @@ Style should be professional, modern, cinematic lighting, high contrast, dark ba
 def build_thumbnail_user_prompt(
     cut_plan: CutPlan,
     source_context: SourceContext | None = None,
+    template: ThumbnailTemplate | None = None,
 ) -> str:
     """Build the user prompt for thumbnail concept generation."""
     channels = ", ".join(cut_plan.hashtags[:3]) if cut_plan.hashtags else "general"
@@ -69,6 +70,13 @@ def build_thumbnail_user_prompt(
         if parts:
             source_block = "\nBrand context:\n" + "\n".join(parts) + "\n"
 
+    person_block = ""
+    if template and template.person_description:
+        person_block = (
+            f"\nPerson description (include verbatim in flux_prompt):\n"
+            f"{template.person_description}\n"
+        )
+
     return f"""\
 Generate a thumbnail concept for this video cut:
 
@@ -77,10 +85,10 @@ Generate a thumbnail concept for this video cut:
 - **Cut type**: {cut_plan.spec_name}
 - **Duration**: {cut_plan.total_estimated_duration:.0f}s
 - **Channels**: {channels}
-{source_block}
+{source_block}{person_block}
 Use the generate_thumbnail_concept tool. Remember:
 - Hook text must NOT repeat the title — complement it
 - 2-5 words max, outcome-focused
 - Pick the archetype that best matches the content
-- Flux prompt should describe the background scene only (no text overlays)
+- Flux prompt: include the person description verbatim, place tech visuals in bottom-left, keep upper-left clean for text
 """

@@ -68,7 +68,7 @@ def run_thumbnail(
         spec_dir.mkdir(parents=True, exist_ok=True)
 
         # 1. Generate concept via Claude
-        concept = _generate_concept(plan, client, source_context)
+        concept = _generate_concept(plan, client, source_context, template=template)
         concept_path = spec_dir / "concept.json"
         concept_path.write_text(concept.model_dump_json(indent=2))
         logger.info("Thumbnail concept for %s: %s", plan.spec_name, concept.hook_text)
@@ -113,9 +113,10 @@ def _generate_concept(
     plan: CutPlan,
     client: AIClient,
     source_context: SourceContext | None,
+    template: ThumbnailTemplate | None = None,
 ) -> ThumbnailConcept:
     """Call Claude to generate a thumbnail concept."""
-    user_prompt = build_thumbnail_user_prompt(plan, source_context)
+    user_prompt = build_thumbnail_user_prompt(plan, source_context, template=template)
     raw = client.generate_thumbnail_concept(THUMBNAIL_SYSTEM_PROMPT, user_prompt)
     return ThumbnailConcept.model_validate(raw)
 
@@ -467,44 +468,59 @@ def _render_text(
     concept: ThumbnailConcept,
     template: ThumbnailTemplate,
 ) -> Image.Image:
-    """Render hook text onto the image with stroke outline."""
+    """Render hook text onto the image.
+
+    Supports two styles via template.text_style:
+    - "plain": all lines white with black stroke
+    - "line1_white_line2_red": line 1 white with stroke, line 2+ white on red bar
+    """
     draw = ImageDraw.Draw(img)
     w, h = img.size
 
-    # Load font with dynamic sizing
-    font = _load_font(template.font_impact, w, concept.hook_text)
+    # Load font with dynamic sizing, scaled by template
+    font = _load_font(template.font_impact, w, concept.hook_text, template.font_scale)
 
     # Calculate text position in safe zone
-    margin_x = int(w * _SAFE_MARGIN)
-    margin_y = int(h * _SAFE_MARGIN)
+    margin_x = int(w * 0.04)
 
     if concept.text_position == "upper_right":
-        # Right-aligned text
         bbox = draw.textbbox((0, 0), concept.hook_text, font=font)
         text_w = bbox[2] - bbox[0]
         x = w - margin_x - text_w
     else:
-        # Left-aligned (default)
         x = margin_x
 
-    y = margin_y + int(h * 0.05)
+    y = int(h * 0.05)
+    stroke_w = max(4, int(font.size * 0.06))
 
-    # Draw text with stroke for contrast
-    stroke_color = (0, 0, 0)
-    stroke_width = max(3, int(font.size * 0.06))
-
-    # Render each line separately for multi-line text
     lines = concept.hook_text.upper().split("\n")
+    use_red_bar = template.text_style == "line1_white_line2_red" and len(lines) > 1
+
     line_y = y
-    for line in lines:
-        draw.text(
-            (x, line_y),
-            line,
-            font=font,
-            fill=(255, 255, 255),
-            stroke_width=stroke_width,
-            stroke_fill=stroke_color,
-        )
+    for i, line in enumerate(lines):
+        if use_red_bar and i > 0:
+            # Red background bar for lines after the first
+            left, top, right, bottom = font.getbbox(line)
+            text_w = right - left
+            pad_x = int(font.size * 0.2)
+            pad_y = int(font.size * 0.15)
+            rect_y1 = line_y + top - pad_y
+            rect_y2 = line_y + bottom + pad_y
+            draw.rectangle(
+                [(x - pad_x, rect_y1), (x + text_w + pad_x, rect_y2)],
+                fill=(220, 20, 20),
+            )
+            draw.text((x, line_y), line, font=font, fill=(255, 255, 255))
+        else:
+            # White text with black stroke
+            draw.text(
+                (x, line_y),
+                line,
+                font=font,
+                fill=(255, 255, 255),
+                stroke_width=stroke_w,
+                stroke_fill=(0, 0, 0),
+            )
         bbox = draw.textbbox((x, line_y), line, font=font)
         line_y = bbox[3] + int(h * 0.01)
 
@@ -522,10 +538,12 @@ def _resolve_asset(path_str: str) -> Path:
     return p  # return as-is, let caller handle missing
 
 
-def _load_font(font_path: str, canvas_width: int, text: str) -> ImageFont.FreeTypeFont:
+def _load_font(
+    font_path: str, canvas_width: int, text: str, scale: float = 1.0
+) -> ImageFont.FreeTypeFont:
     """Load font with dynamic sizing to fit within 45% of canvas width."""
     target_width = int(canvas_width * 0.45)
-    font_size = int(canvas_width * 0.08)  # Start at ~8% of width
+    font_size = int(canvas_width * 0.08 * scale)
     resolved_path = str(_resolve_asset(font_path))
 
     try:

@@ -11,6 +11,13 @@
       "opacity": 0.9,
       "x": "W-w-65",
       "y": "H-h-40"
+    },
+    "thumbnail": {
+      "primary_color": "#336791",
+      "accent_color": "#F5A623",
+      "font_scale": 1.2,
+      "text_style": "line1_white_line2_red",
+      "person_description": "athletic man with blue eyes, wearing a plain black crew neck t-shirt with short sleeves, on the far right side of frame taking up 35 percent of the image, determined intense expression looking slightly to the left, bright blue eyes, cinematic dramatic lighting, high contrast"
     }
   },
   "source": {

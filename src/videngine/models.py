@@ -141,13 +141,16 @@ class WatermarkPosition(BaseModel):
 
 
 class ThumbnailTemplate(BaseModel):
-    """Per-brand thumbnail rendering config — colors, fonts, layout."""
+    """Per-brand thumbnail rendering config — colors, fonts, person description."""
 
     primary_color: str = "#336791"  # PostgreSQL blue
     accent_color: str = "#F5A623"  # warm orange
     font_impact: str = "assets/fonts/Montserrat-Bold.ttf"
     font_readable: str = "assets/fonts/BebasNeue-Regular.ttf"
+    font_scale: float = 1.2  # multiplier on base font size
     logo_scale: float = 0.08
+    person_description: str = ""  # physical appearance for Flux prompts
+    text_style: str = "line1_white_line2_red"  # "plain" or "line1_white_line2_red"
 
 
 class Branding(BaseModel):
