@@ -140,6 +140,16 @@ class WatermarkPosition(BaseModel):
     y: str = "H-h-40"  # ffmpeg overlay y expression
 
 
+class ThumbnailTemplate(BaseModel):
+    """Per-brand thumbnail rendering config — colors, fonts, layout."""
+
+    primary_color: str = "#336791"  # PostgreSQL blue
+    accent_color: str = "#F5A623"  # warm orange
+    font_impact: str = "assets/fonts/Montserrat-Bold.ttf"
+    font_readable: str = "assets/fonts/BebasNeue-Regular.ttf"
+    logo_scale: float = 0.08
+
+
 class Branding(BaseModel):
     """Per-pipeline branding assets — intro/outro templates and watermark."""
 
@@ -150,6 +160,7 @@ class Branding(BaseModel):
     watermark: str = ""
     watermark_16x9: WatermarkPosition = Field(default_factory=WatermarkPosition)
     watermark_9x16: WatermarkPosition = Field(default_factory=WatermarkPosition)
+    thumbnail: ThumbnailTemplate = Field(default_factory=ThumbnailTemplate)
 
 
 class CutSpecFile(BaseModel):
@@ -236,6 +247,21 @@ class CutPlan(BaseModel):
     visual_effects: list[VisualEffect] = Field(default_factory=list)
 
 
+# --- Thumbnails (Stage 7) ---
+
+
+class ThumbnailConcept(BaseModel):
+    """AI-generated thumbnail concept — what to render."""
+
+    hook_text: str  # 2-5 word outcome text (NOT the video title)
+    archetype: str = "tutorial"  # "performance", "tutorial", "comparison"
+    face_expression: str = "determined"  # expression guidance
+    accent_color: str = "#F5A623"  # hex accent color
+    visual_elements: list[str] = Field(default_factory=list)  # scene elements
+    flux_prompt: str = ""  # image generation prompt for Flux Kontext
+    text_position: str = "upper_left"  # "upper_left" or "upper_right"
+
+
 # --- JobState (Resumability) ---
 
 
@@ -255,7 +281,15 @@ class StageResult(BaseModel):
     artifacts: dict[str, str] = Field(default_factory=dict)  # name → relative path
 
 
-STAGE_NAMES = ["transcribe", "analyze", "cut", "watermark", "intro_outro", "hook_prepend"]
+STAGE_NAMES = [
+    "transcribe",
+    "analyze",
+    "cut",
+    "watermark",
+    "intro_outro",
+    "hook_prepend",
+    "thumbnail",
+]
 
 
 class JobState(BaseModel):

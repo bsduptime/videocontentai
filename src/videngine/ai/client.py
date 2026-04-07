@@ -9,6 +9,7 @@ import anthropic
 
 from ..config import AIConfig
 from .schemas import ANALYZE_TRANSCRIPT_TOOL, CREATE_CUT_PLAN_TOOL
+from .thumbnail_schemas import GENERATE_THUMBNAIL_CONCEPT_TOOL
 
 
 class AIClient:
@@ -39,6 +40,22 @@ class AIClient:
         Returns the parsed tool input (cut plan dict).
         """
         return self._call_tool(system_prompt, user_prompt, CREATE_CUT_PLAN_TOOL, "create_cut_plan")
+
+    def generate_thumbnail_concept(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+    ) -> dict[str, Any]:
+        """Call Claude to generate a thumbnail concept for a cut.
+
+        Returns the parsed tool input (thumbnail concept dict).
+        """
+        return self._call_tool(
+            system_prompt,
+            user_prompt,
+            GENERATE_THUMBNAIL_CONCEPT_TOOL,
+            "generate_thumbnail_concept",
+        )
 
     def _call_tool(
         self,

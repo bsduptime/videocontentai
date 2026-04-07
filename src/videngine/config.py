@@ -99,6 +99,15 @@ class EncodingConfig:
 
 
 @dataclass
+class ThumbnailConfig:
+    enabled: bool = True
+    flux_api_url: str = "https://api.bfl.ai/v1/flux-kontext"
+    face_reference_dir: str = "assets/faces"
+    fonts_dir: str = "assets/fonts"
+    fallback_only: bool = False  # Force Pillow-only mode (no Flux API)
+
+
+@dataclass
 class Config:
     paths: PathsConfig = field(default_factory=PathsConfig)
     whisper: WhisperConfig = field(default_factory=WhisperConfig)
@@ -107,6 +116,7 @@ class Config:
     video: VideoConfig = field(default_factory=VideoConfig)
     audio: AudioConfig = field(default_factory=AudioConfig)
     encoding: EncodingConfig = field(default_factory=EncodingConfig)
+    thumbnail: ThumbnailConfig = field(default_factory=ThumbnailConfig)
 
 
 def _apply_section(target: object, data: dict) -> None:
@@ -143,6 +153,7 @@ def load_config(config_path: str | Path | None = None) -> Config:
                 "voice": cfg.voice,
                 "video": cfg.video,
                 "encoding": cfg.encoding,
+                "thumbnail": cfg.thumbnail,
             }
             for section_name, target in section_map.items():
                 if section_name in data:
@@ -175,6 +186,7 @@ def load_config(config_path: str | Path | None = None) -> Config:
             "voice": cfg.voice,
             "video": cfg.video,
             "encoding": cfg.encoding,
+            "thumbnail": cfg.thumbnail,
         }
         target = section_map.get(section_name)
         if target and hasattr(target, field_name):

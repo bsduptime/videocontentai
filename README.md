@@ -17,6 +17,7 @@ Raw Video → Transcribe → AI Edit Agent → Voice Clone → Assemble → Mult
 | **Voice** | Clone founder's voice for intro/outro narration | Chatterbox TTS (CUDA) |
 | **Assemble** | Cut segments, layer narration on templates, concat, watermark | FFmpeg |
 | **Render** | Output multiple aspect ratios for each platform | FFmpeg |
+| **Thumbnail** | Generate platform-specific thumbnails per cut | Claude + Flux Kontext API + Pillow |
 
 Each stage checkpoints to `job_state.json`. If anything fails, `videngine resume` picks up where it stopped.
 

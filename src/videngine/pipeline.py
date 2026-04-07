@@ -80,6 +80,7 @@ class Pipeline:
         project: str = "",
         specs_file: str | None = None,
         no_voice: bool = False,
+        no_thumbnail: bool = False,
         review: bool = False,
         dry_run: bool = False,
         job_id: str | None = None,
@@ -88,6 +89,7 @@ class Pipeline:
         self.config = config
         self.project = project
         self.no_voice = no_voice
+        self.no_thumbnail = no_thumbnail
         self.review = review
         self.dry_run = dry_run
 
@@ -153,6 +155,11 @@ class Pipeline:
             self._run_stage("intro_outro", self._stage_intro_outro)
             self._run_stage("hook_prepend", self._stage_hook_prepend)
 
+            if self.no_thumbnail or not self.config.thumbnail.enabled:
+                self._skip_stage("thumbnail")
+            else:
+                self._run_stage("thumbnail", self._stage_thumbnail)
+
         except KeyboardInterrupt:
             console.print("\n[yellow]Interrupted. Resume with:[/yellow]")
             console.print(f"  videngine resume {self.job.job_id}")
@@ -162,6 +169,12 @@ class Pipeline:
         outputs = self.job.stages.get("hook_prepend", StageResult()).artifacts
         for spec_name, path in outputs.items():
             console.print(f"  {spec_name}: {path}")
+
+        thumb_outputs = self.job.stages.get("thumbnail", StageResult()).artifacts
+        if thumb_outputs:
+            console.print("\n  [bold]Thumbnails:[/bold]")
+            for spec_name, path in thumb_outputs.items():
+                console.print(f"    {spec_name}: {path}")
 
         return self.job
 
@@ -311,6 +324,22 @@ class Pipeline:
         )
         self.job.stages["hook_prepend"].artifacts = {
             name: f"clips/{name}/final.mp4" for name in result
+        }
+
+    def _stage_thumbnail(self) -> None:
+        from .stages.thumbnail import run_thumbnail
+
+        cut_plans = self._load_cut_plans()
+        result = run_thumbnail(
+            cut_plans,
+            self.job.source_file,
+            self.job.working_dir,
+            self.config,
+            branding=self.branding,
+            source_context=self.source_context,
+        )
+        self.job.stages["thumbnail"].artifacts = {
+            name: f"clips/{name}/thumbnails/thumbnail_youtube.png" for name in result
         }
 
     # --- Helpers ---

@@ -27,10 +27,13 @@ One long video → suite of platform-optimized clips at different lengths.
 
 ## Phase 3 — Thumbnails + Visual Assets
 
-- [ ] Face-consistent thumbnail generation (Flux PuLID / IP-Adapter)
-- [ ] AI-described thumbnail scenes per cut
-- [ ] Branded thumbnail templates (colors, logo, typography from brand)
-- [ ] YouTube thumbnail + social preview image per cut
+- [x] Claude-generated thumbnail concepts (hook text, archetype, visual direction)
+- [x] Pillow compositing engine (gradient backgrounds, face composite, text rendering)
+- [x] Branded thumbnail templates (colors, fonts, logo overlay per brand)
+- [x] Multi-platform variants (YouTube 1280x720, Shorts 1080x1920, LinkedIn 1200x627)
+- [x] Flux Kontext API integration for AI-generated base images with face consistency
+- [x] Pillow-only fallback when API unavailable
+- [ ] Local GPU image generation (Flux/SD on Jetson) — assess quality vs API
 
 ## Phase 4 — Assembly Polish
 

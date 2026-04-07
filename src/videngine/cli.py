@@ -573,6 +573,9 @@ def cut(
         typer.Option(help="Brand: dbexpertai or founder (overrides subdir detection)"),
     ] = None,
     no_voice: Annotated[bool, typer.Option("--no-voice", help="Skip voice cloning")] = False,
+    no_thumbnail: Annotated[
+        bool, typer.Option("--no-thumbnail", help="Skip thumbnail generation")
+    ] = False,
     review: Annotated[bool, typer.Option(help="Pause after AI analysis for review")] = False,
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Show what would run without executing")
@@ -645,6 +648,7 @@ def cut(
                 project=video_path.stem,
                 specs_file=specs_path,
                 no_voice=no_voice,
+                no_thumbnail=no_thumbnail,
                 review=review,
                 dry_run=dry_run,
             )
@@ -676,6 +680,9 @@ def process(
         ),
     ] = None,
     no_voice: Annotated[bool, typer.Option("--no-voice", help="Skip voice cloning")] = False,
+    no_thumbnail: Annotated[
+        bool, typer.Option("--no-thumbnail", help="Skip thumbnail generation")
+    ] = False,
     review: Annotated[bool, typer.Option(help="Pause after AI analysis for review")] = False,
     model: Annotated[Optional[str], typer.Option(help="Override AI model")] = None,
     keep_intermediates: Annotated[
@@ -709,6 +716,7 @@ def process(
         project=project,
         specs_file=str(specs) if specs else None,
         no_voice=no_voice,
+        no_thumbnail=no_thumbnail,
         review=review,
         dry_run=dry_run,
     )
