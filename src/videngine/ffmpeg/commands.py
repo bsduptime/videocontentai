@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from ..config import EncodingConfig
 from ..models import VisualEffect
-from .filters import watermark_overlay
 
 # Font path for text overlays (DejaVu Sans Bold — confirmed present on Jetson)
 _FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -26,12 +25,17 @@ def _audio_encode_args(encoding: EncodingConfig) -> list[str]:
 def extract_audio(input_path: str, output_path: str) -> list[str]:
     """Extract audio as 16kHz mono WAV for whisper."""
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
         "-vn",
-        "-acodec", "pcm_s16le",
-        "-ar", "16000",
-        "-ac", "1",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "16000",
+        "-ac",
+        "1",
         output_path,
     ]
 
@@ -44,12 +48,18 @@ def cut_segment(
 ) -> list[str]:
     """Cut a segment from source using stream copy (no re-encoding)."""
     return [
-        "ffmpeg", "-y",
-        "-ss", f"{start:.3f}",
-        "-i", input_path,
-        "-to", f"{end - start:.3f}",
-        "-c", "copy",
-        "-avoid_negative_ts", "make_zero",
+        "ffmpeg",
+        "-y",
+        "-ss",
+        f"{start:.3f}",
+        "-i",
+        input_path,
+        "-to",
+        f"{end - start:.3f}",
+        "-c",
+        "copy",
+        "-avoid_negative_ts",
+        "make_zero",
         output_path,
     ]
 
@@ -64,11 +74,16 @@ def concat_segments(
     concat_content = "\n".join(lines)
 
     cmd = [
-        "ffmpeg", "-y",
-        "-f", "concat",
-        "-safe", "0",
-        "-i", concat_list_path,
-        "-c", "copy",
+        "ffmpeg",
+        "-y",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        concat_list_path,
+        "-c",
+        "copy",
         output_path,
     ]
     return concat_content, cmd
@@ -87,11 +102,15 @@ def scale_to_1080p(
         vf = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black"
 
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-vf", vf,
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-vf",
+        vf,
         *_video_encode_args(encoding),
-        "-ac", "2",  # normalize to stereo
+        "-ac",
+        "2",  # normalize to stereo
         *_audio_encode_args(encoding),
         output_path,
     ]
@@ -123,10 +142,14 @@ def compress_audio(
         f":makeup={makeup_db}dB"
     )
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-af", af,
-        "-c:v", "copy",
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-af",
+        af,
+        "-c:v",
+        "copy",
         *_audio_encode_args(encoding),
         output_path,
     ]
@@ -139,15 +162,17 @@ def loudnorm_measure(
     lra: float = 11.0,
 ) -> list[str]:
     """Pass 1: measure loudness stats (outputs JSON to stderr)."""
-    af = (
-        f"loudnorm=I={target_lufs}:TP={true_peak}:LRA={lra}"
-        f":print_format=json"
-    )
+    af = f"loudnorm=I={target_lufs}:TP={true_peak}:LRA={lra}" f":print_format=json"
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-af", af,
-        "-f", "null", "-",
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-af",
+        af,
+        "-f",
+        "null",
+        "-",
     ]
 
 
@@ -172,10 +197,14 @@ def loudnorm_apply(
         f":offset={offset}:linear=true:print_format=summary"
     )
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-af", af,
-        "-c:v", "copy",
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-af",
+        af,
+        "-c:v",
+        "copy",
         *_audio_encode_args(encoding),
         output_path,
     ]
@@ -193,11 +222,16 @@ def detect_scenes(
     """
     vf = f"select='gt(scene,{threshold})',metadata=print:file={scores_path}"
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-vf", vf,
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-vf",
+        vf,
         "-an",
-        "-f", "null", "-",
+        "-f",
+        "null",
+        "-",
     ]
 
 
@@ -221,13 +255,20 @@ def mix_background_music(
     )
 
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-i", music_path,
-        "-filter_complex", filter_complex,
-        "-map", "0:v",
-        "-map", "[aout]",
-        "-c:v", "copy",
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-i",
+        music_path,
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        "0:v",
+        "-map",
+        "[aout]",
+        "-c:v",
+        "copy",
         *_audio_encode_args(encoding),
         output_path,
     ]
@@ -251,12 +292,17 @@ def apply_watermark(
     )
 
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-i", watermark_path,
-        "-filter_complex", filter_graph,
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-i",
+        watermark_path,
+        "-filter_complex",
+        filter_graph,
         *_video_encode_args(encoding),
-        "-c:a", "copy",
+        "-c:a",
+        "copy",
         output_path,
     ]
 
@@ -274,9 +320,12 @@ def scale_and_pad(
         f"pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:black"
     )
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-vf", vf,
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-vf",
+        vf,
         *_video_encode_args(encoding),
         *_audio_encode_args(encoding),
         output_path,
@@ -291,14 +340,14 @@ def center_crop(
     encoding: EncodingConfig,
 ) -> list[str]:
     """Center crop video to target aspect ratio."""
-    vf = (
-        f"crop=ih*{target_width}/{target_height}:ih,"
-        f"scale={target_width}:{target_height}"
-    )
+    vf = f"crop=ih*{target_width}/{target_height}:ih," f"scale={target_width}:{target_height}"
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-vf", vf,
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-vf",
+        vf,
         *_video_encode_args(encoding),
         *_audio_encode_args(encoding),
         output_path,
@@ -336,9 +385,7 @@ def _build_zoompan(effect: VisualEffect, fps: int = 60) -> str:
     # z: zoom level. 1.0 outside window, ramps 1.0→zf during window, holds zf after
     # progress = (on - f_start) / f_dur, clamped 0→1
     z_expr = (
-        f"if(lt(on,{f_start}),1,"
-        f"if(lt(on,{f_end}),1+{zf - 1}*(on-{f_start})/{f_dur},"
-        f"1))"
+        f"if(lt(on,{f_start}),1," f"if(lt(on,{f_end}),1+{zf - 1}*(on-{f_start})/{f_dur}," f"1))"
     )
 
     # x/y: pan toward target as zoom increases
@@ -364,12 +411,7 @@ def _build_zoompan(effect: VisualEffect, fps: int = 60) -> str:
         f"{y_center}))"
     )
 
-    return (
-        f"zoompan=z='{z_expr}'"
-        f":x='{x_expr}'"
-        f":y='{y_expr}'"
-        f":d=1:s=1920x1080:fps={fps}"
-    )
+    return f"zoompan=z='{z_expr}'" f":x='{x_expr}'" f":y='{y_expr}'" f":d=1:s=1920x1080:fps={fps}"
 
 
 def _build_drawtext(effect: VisualEffect) -> str:
@@ -431,11 +473,16 @@ def apply_watermark_with_effects(
     )
 
     return [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-i", watermark_path,
-        "-filter_complex", filter_graph,
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-i",
+        watermark_path,
+        "-filter_complex",
+        filter_graph,
         *_video_encode_args(encoding),
-        "-c:a", "copy",
+        "-c:a",
+        "copy",
         output_path,
     ]

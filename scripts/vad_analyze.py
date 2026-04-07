@@ -49,10 +49,12 @@ class Wav2Vec2ForSpeechClassification(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.wav2vec2 = transformers.Wav2Vec2Model(config)
-        self.classifier = nn.ModuleDict({
-            "dense": nn.Linear(config.hidden_size, config.hidden_size),
-            "out_proj": nn.Linear(config.hidden_size, 3),
-        })
+        self.classifier = nn.ModuleDict(
+            {
+                "dense": nn.Linear(config.hidden_size, config.hidden_size),
+                "out_proj": nn.Linear(config.hidden_size, 3),
+            }
+        )
 
     def forward(self, input_values, attention_mask=None):
         outputs = self.wav2vec2(input_values, attention_mask=attention_mask)
@@ -107,8 +109,16 @@ def extract_audio(video_path: Path, out_wav: Path) -> None:
     """Extract 16kHz mono WAV from video."""
     subprocess.run(
         [
-            "ffmpeg", "-y", "-i", str(video_path),
-            "-ar", str(SAMPLE_RATE), "-ac", "1", "-f", "wav",
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(video_path),
+            "-ar",
+            str(SAMPLE_RATE),
+            "-ac",
+            "1",
+            "-f",
+            "wav",
             str(out_wav),
         ],
         capture_output=True,
@@ -185,14 +195,16 @@ def analyze_video(video_path: Path, model, processor, device: str) -> dict:
             vad = predict_vad(model, processor, chunk.astype(np.float32), device)
             mode = classify_energy_mode(vad["arousal"], vad["valence"])
 
-            windows.append({
-                "start_sec": round(start_sample / sr, 2),
-                "end_sec": round(end_sample / sr, 2),
-                "arousal": round(vad["arousal"], 4),
-                "dominance": round(vad["dominance"], 4),
-                "valence": round(vad["valence"], 4),
-                "energy_mode": mode,
-            })
+            windows.append(
+                {
+                    "start_sec": round(start_sample / sr, 2),
+                    "end_sec": round(end_sample / sr, 2),
+                    "arousal": round(vad["arousal"], 4),
+                    "dominance": round(vad["dominance"], 4),
+                    "valence": round(vad["valence"], 4),
+                    "energy_mode": mode,
+                }
+            )
 
         # Re-classify using per-recording relative thresholds
         classify_energy_modes_relative(windows)
@@ -225,18 +237,17 @@ def analyze_video(video_path: Path, model, processor, device: str) -> dict:
 
             for w in windows[1:]:
                 if w["energy_mode"] != seg_mode:
-                    segments.append({
-                        "energy_mode": seg_mode,
-                        "start_sec": seg_start,
-                        "end_sec": w["start_sec"],
-                        "duration_sec": round(w["start_sec"] - seg_start, 2),
-                        "avg_arousal": round(
-                            sum(seg_arousals) / len(seg_arousals), 4),
-                        "avg_valence": round(
-                            sum(seg_valences) / len(seg_valences), 4),
-                        "avg_dominance": round(
-                            sum(seg_dominances) / len(seg_dominances), 4),
-                    })
+                    segments.append(
+                        {
+                            "energy_mode": seg_mode,
+                            "start_sec": seg_start,
+                            "end_sec": w["start_sec"],
+                            "duration_sec": round(w["start_sec"] - seg_start, 2),
+                            "avg_arousal": round(sum(seg_arousals) / len(seg_arousals), 4),
+                            "avg_valence": round(sum(seg_valences) / len(seg_valences), 4),
+                            "avg_dominance": round(sum(seg_dominances) / len(seg_dominances), 4),
+                        }
+                    )
                     seg_start = w["start_sec"]
                     seg_mode = w["energy_mode"]
                     seg_arousals = [w["arousal"]]
@@ -247,19 +258,17 @@ def analyze_video(video_path: Path, model, processor, device: str) -> dict:
                     seg_valences.append(w["valence"])
                     seg_dominances.append(w["dominance"])
 
-            segments.append({
-                "energy_mode": seg_mode,
-                "start_sec": seg_start,
-                "end_sec": windows[-1]["end_sec"],
-                "duration_sec": round(
-                    windows[-1]["end_sec"] - seg_start, 2),
-                "avg_arousal": round(
-                    sum(seg_arousals) / len(seg_arousals), 4),
-                "avg_valence": round(
-                    sum(seg_valences) / len(seg_valences), 4),
-                "avg_dominance": round(
-                    sum(seg_dominances) / len(seg_dominances), 4),
-            })
+            segments.append(
+                {
+                    "energy_mode": seg_mode,
+                    "start_sec": seg_start,
+                    "end_sec": windows[-1]["end_sec"],
+                    "duration_sec": round(windows[-1]["end_sec"] - seg_start, 2),
+                    "avg_arousal": round(sum(seg_arousals) / len(seg_arousals), 4),
+                    "avg_valence": round(sum(seg_valences) / len(seg_valences), 4),
+                    "avg_dominance": round(sum(seg_dominances) / len(seg_dominances), 4),
+                }
+            )
 
         # Energy mode distribution
         mode_time = {}
@@ -269,15 +278,11 @@ def analyze_video(video_path: Path, model, processor, device: str) -> dict:
             )
         distribution = {
             m: round(t / total_duration * 100, 1)
-            for m, t in sorted(mode_time.items(),
-                               key=lambda x: x[1], reverse=True)
+            for m, t in sorted(mode_time.items(), key=lambda x: x[1], reverse=True)
         }
 
         # Arousal arc (for visualizing energy curve across the video)
-        arousal_arc = [
-            {"time_sec": w["start_sec"], "arousal": w["arousal"]}
-            for w in windows
-        ]
+        arousal_arc = [{"time_sec": w["start_sec"], "arousal": w["arousal"]} for w in windows]
 
         return {
             "file": str(video_path),
@@ -314,19 +319,22 @@ def main():
         # Print summary
         o = result["overall"]
         print(f"  Duration: {result['duration_sec']:.1f}s")
-        print(f"  Overall: {o['energy_mode']}  "
-              f"(A={o['arousal']:.3f}  V={o['valence']:.3f}  "
-              f"D={o['dominance']:.3f})")
+        print(
+            f"  Overall: {o['energy_mode']}  "
+            f"(A={o['arousal']:.3f}  V={o['valence']:.3f}  "
+            f"D={o['dominance']:.3f})"
+        )
         print(f"  Segments: {len(result['segments'])}")
         for seg in result["segments"]:
-            print(f"    {seg['start_sec']:6.1f}s - {seg['end_sec']:6.1f}s  "
-                  f"{seg['energy_mode']:>8s}  "
-                  f"(A={seg['avg_arousal']:.3f}  "
-                  f"V={seg['avg_valence']:.3f}  "
-                  f"D={seg['avg_dominance']:.3f})")
+            print(
+                f"    {seg['start_sec']:6.1f}s - {seg['end_sec']:6.1f}s  "
+                f"{seg['energy_mode']:>8s}  "
+                f"(A={seg['avg_arousal']:.3f}  "
+                f"V={seg['avg_valence']:.3f}  "
+                f"D={seg['avg_dominance']:.3f})"
+            )
         dist = result["energy_mode_distribution_pct"]
-        print(f"  Energy distribution: "
-              f"{', '.join(f'{m} {p}%' for m, p in dist.items())}")
+        print(f"  Energy distribution: " f"{', '.join(f'{m} {p}%' for m, p in dist.items())}")
         print()
 
     # Write full results

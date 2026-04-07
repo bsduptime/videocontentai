@@ -10,8 +10,15 @@ from pathlib import Path
 import soundfile as sf
 
 EMOTION_LABELS = [
-    "angry", "disgusted", "fearful", "happy",
-    "neutral", "other", "sad", "surprised", "unknown",
+    "angry",
+    "disgusted",
+    "fearful",
+    "happy",
+    "neutral",
+    "other",
+    "sad",
+    "surprised",
+    "unknown",
 ]
 
 WINDOW_SEC = 3  # analyze in 3-second windows for temporal tracking
@@ -21,8 +28,16 @@ def extract_audio(video_path: Path, out_wav: Path) -> None:
     """Extract 16kHz mono WAV from video."""
     subprocess.run(
         [
-            "ffmpeg", "-y", "-i", str(video_path),
-            "-ar", "16000", "-ac", "1", "-f", "wav",
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(video_path),
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            "-f",
+            "wav",
             str(out_wav),
         ],
         capture_output=True,
@@ -89,16 +104,17 @@ def analyze_video(video_path: Path, model) -> dict:
                     extract_embedding=False,
                 )
                 w_scores = parse_scores(res[0]["scores"])
-                w_labeled = {EMOTION_LABELS[i]: round(s, 4)
-                             for i, s in enumerate(w_scores)}
+                w_labeled = {EMOTION_LABELS[i]: round(s, 4) for i, s in enumerate(w_scores)}
                 w_top = max(w_labeled, key=w_labeled.get)
-                windows.append({
-                    "start_sec": round(start_sample / sr, 2),
-                    "end_sec": round(end_sample / sr, 2),
-                    "top_emotion": w_top,
-                    "confidence": w_labeled[w_top],
-                    "all_scores": w_labeled,
-                })
+                windows.append(
+                    {
+                        "start_sec": round(start_sample / sr, 2),
+                        "end_sec": round(end_sample / sr, 2),
+                        "top_emotion": w_top,
+                        "confidence": w_labeled[w_top],
+                        "all_scores": w_labeled,
+                    }
+                )
             finally:
                 chunk_path.unlink(missing_ok=True)
 
@@ -111,40 +127,38 @@ def analyze_video(video_path: Path, model) -> dict:
 
             for w in windows[1:]:
                 if w["top_emotion"] != seg_emotion:
-                    segments.append({
-                        "emotion": seg_emotion,
-                        "start_sec": seg_start,
-                        "end_sec": w["start_sec"],
-                        "duration_sec": round(w["start_sec"] - seg_start, 2),
-                        "avg_confidence": round(
-                            sum(seg_confidences) / len(seg_confidences), 4),
-                    })
+                    segments.append(
+                        {
+                            "emotion": seg_emotion,
+                            "start_sec": seg_start,
+                            "end_sec": w["start_sec"],
+                            "duration_sec": round(w["start_sec"] - seg_start, 2),
+                            "avg_confidence": round(sum(seg_confidences) / len(seg_confidences), 4),
+                        }
+                    )
                     seg_start = w["start_sec"]
                     seg_emotion = w["top_emotion"]
                     seg_confidences = [w["confidence"]]
                 else:
                     seg_confidences.append(w["confidence"])
 
-            segments.append({
-                "emotion": seg_emotion,
-                "start_sec": seg_start,
-                "end_sec": windows[-1]["end_sec"],
-                "duration_sec": round(
-                    windows[-1]["end_sec"] - seg_start, 2),
-                "avg_confidence": round(
-                    sum(seg_confidences) / len(seg_confidences), 4),
-            })
+            segments.append(
+                {
+                    "emotion": seg_emotion,
+                    "start_sec": seg_start,
+                    "end_sec": windows[-1]["end_sec"],
+                    "duration_sec": round(windows[-1]["end_sec"] - seg_start, 2),
+                    "avg_confidence": round(sum(seg_confidences) / len(seg_confidences), 4),
+                }
+            )
 
         # Emotion distribution
         emotion_time = {}
         for seg in segments:
-            emotion_time[seg["emotion"]] = (
-                emotion_time.get(seg["emotion"], 0) + seg["duration_sec"]
-            )
+            emotion_time[seg["emotion"]] = emotion_time.get(seg["emotion"], 0) + seg["duration_sec"]
         distribution = {
             e: round(t / total_duration * 100, 1)
-            for e, t in sorted(emotion_time.items(),
-                                key=lambda x: x[1], reverse=True)
+            for e, t in sorted(emotion_time.items(), key=lambda x: x[1], reverse=True)
         }
 
         return {
@@ -190,11 +204,12 @@ def main():
         print(f"  Overall: {o['top_emotion']} ({o['confidence']:.1%})")
         print(f"  Segments: {len(result['segments'])}")
         for seg in result["segments"]:
-            print(f"    {seg['start_sec']:6.1f}s - {seg['end_sec']:6.1f}s  "
-                  f"{seg['emotion']:>10s}  ({seg['avg_confidence']:.1%})")
+            print(
+                f"    {seg['start_sec']:6.1f}s - {seg['end_sec']:6.1f}s  "
+                f"{seg['emotion']:>10s}  ({seg['avg_confidence']:.1%})"
+            )
         dist = result["emotion_distribution_pct"]
-        print(f"  Distribution: "
-              f"{', '.join(f'{e} {p}%' for e, p in dist.items())}")
+        print(f"  Distribution: " f"{', '.join(f'{e} {p}%' for e, p in dist.items())}")
         print()
 
     # Write full results

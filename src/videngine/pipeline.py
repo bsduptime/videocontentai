@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -59,15 +58,14 @@ def detect_spec_file(source_file: str) -> CutSpecFile:
 
     if not matches:
         raise FileNotFoundError(
-            f"No spec files found for {aspect} source. "
-            f"Provide --specs explicitly."
+            f"No spec files found for {aspect} source. " f"Provide --specs explicitly."
         )
 
     if len(matches) > 1:
         console.print(f"\n[yellow]Multiple spec files match {aspect} source:[/yellow]")
         for f, spec in matches:
             console.print(f"  {f}  ({spec.pipeline})")
-        console.print(f"[yellow]Using first match. Override with --specs.[/yellow]\n")
+        console.print("[yellow]Using first match. Override with --specs.[/yellow]\n")
 
     chosen_path, chosen_spec = matches[0]
     console.print(f"  [dim]Auto-detected {aspect} → {chosen_path} ({chosen_spec.pipeline})[/dim]")
@@ -95,9 +93,7 @@ class Pipeline:
 
         # Create or load job
         if job_id:
-            self.job = JobState.load(
-                str(Path(config.paths.working_dir) / job_id)
-            )
+            self.job = JobState.load(str(Path(config.paths.working_dir) / job_id))
             self.spec_file = self.job.spec_file
             self.no_voice = self.job.no_voice
         else:
@@ -141,7 +137,9 @@ class Pipeline:
         console.print(f"[bold]Pipeline:[/bold] {self.spec_file.pipeline}")
         console.print(f"[bold]Source:[/bold] {self.job.source_file}")
         console.print(f"[bold]Working dir:[/bold] {self.job.working_dir}")
-        console.print(f"[bold]Cuts:[/bold] {', '.join(f'{s.name} ({s.min_duration:.0f}-{s.max_duration:.0f}s)' for s in self.cut_specs)}\n")
+        console.print(
+            f"[bold]Cuts:[/bold] {', '.join(f'{s.name} ({s.min_duration:.0f}-{s.max_duration:.0f}s)' for s in self.cut_specs)}\n"
+        )
 
         try:
             self._run_stage("transcribe", self._stage_transcribe)
@@ -181,7 +179,7 @@ class Pipeline:
 
         try:
             if self.dry_run:
-                console.print(f"    [dim](dry run — skipping execution)[/dim]")
+                console.print("    [dim](dry run — skipping execution)[/dim]")
             else:
                 func()
 
@@ -208,7 +206,7 @@ class Pipeline:
         """Pause for user to review cut plans before proceeding."""
         plans_dir = Path(self.job.working_dir) / "cut_plans"
         if plans_dir.exists():
-            console.print(f"\n[yellow]Review cut plans at:[/yellow]")
+            console.print("\n[yellow]Review cut plans at:[/yellow]")
             console.print(f"  {plans_dir}")
             for f in sorted(plans_dir.glob("*.json")):
                 console.print(f"    {f.name}")
@@ -220,15 +218,14 @@ class Pipeline:
     def _stage_transcribe(self) -> None:
         from .stages.transcribe import run_transcribe, run_visual_analysis
 
-        run_transcribe(
-            self.job.source_file, self.job.working_dir, self.config
-        )
+        run_transcribe(self.job.source_file, self.job.working_dir, self.config)
 
         # Adaptive frame interval based on source format
         frame_interval, dedup_window = self._get_frame_sampling_params()
 
         run_visual_analysis(
-            self.job.source_file, self.job.working_dir,
+            self.job.source_file,
+            self.job.working_dir,
             dedup_window=dedup_window,
             frame_interval=frame_interval,
         )
@@ -244,8 +241,11 @@ class Pipeline:
         transcript = self._load_transcript()
         visual_context = self._load_visual_context()
         cut_plans = run_analyze(
-            transcript, self.job.working_dir, self.config,
-            self.cut_specs, self.source_context,
+            transcript,
+            self.job.working_dir,
+            self.config,
+            self.cut_specs,
+            self.source_context,
             visual_context=visual_context,
         )
         artifacts = {"_analysis": "cut_plans/_analysis.json"}
@@ -258,12 +258,13 @@ class Pipeline:
 
         cut_plans = self._load_cut_plans()
         clip_paths = run_cut(
-            cut_plans, self.job.source_file, self.job.working_dir, self.config,
+            cut_plans,
+            self.job.source_file,
+            self.job.working_dir,
+            self.config,
             cut_specs=self.cut_specs,
         )
-        self.job.stages["cut"].artifacts = {
-            name: f"clips/{name}/raw.mp4" for name in clip_paths
-        }
+        self.job.stages["cut"].artifacts = {name: f"clips/{name}/raw.mp4" for name in clip_paths}
 
     def _stage_watermark(self) -> None:
         from .stages.watermark import run_watermark
@@ -271,8 +272,11 @@ class Pipeline:
         clip_paths = self._get_clip_paths("cut", "raw.mp4")
         cut_plans = self._load_cut_plans()
         watermarked = run_watermark(
-            clip_paths, self.job.working_dir, self.config,
-            branding=self.branding, cut_plans=cut_plans,
+            clip_paths,
+            self.job.working_dir,
+            self.config,
+            branding=self.branding,
+            cut_plans=cut_plans,
         )
         self.job.stages["watermark"].artifacts = {
             name: f"clips/{name}/watermarked.mp4" for name in watermarked
@@ -284,8 +288,12 @@ class Pipeline:
         clip_paths = self._get_clip_paths("watermark", "watermarked.mp4")
         cut_plans = self._load_cut_plans()
         result = run_intro_outro(
-            clip_paths, cut_plans, self.job.working_dir, self.config,
-            self.no_voice, branding=self.branding,
+            clip_paths,
+            cut_plans,
+            self.job.working_dir,
+            self.config,
+            self.no_voice,
+            branding=self.branding,
         )
         self.job.stages["intro_outro"].artifacts = {
             name: f"clips/{name}/with_intro_outro.mp4" for name in result
@@ -296,7 +304,9 @@ class Pipeline:
 
         clip_paths = self._get_clip_paths("intro_outro", "with_intro_outro.mp4")
         result = run_hook_prepend(
-            clip_paths, self.job.working_dir, self.config,
+            clip_paths,
+            self.job.working_dir,
+            self.config,
             cut_specs=self.cut_specs,
         )
         self.job.stages["hook_prepend"].artifacts = {
@@ -342,7 +352,4 @@ class Pipeline:
         """Build clip paths from a stage's artifacts."""
         work = Path(self.job.working_dir)
         artifacts = self.job.stages[stage_name].artifacts
-        return {
-            name: str(work / f"clips/{name}/{filename}")
-            for name in artifacts
-        }
+        return {name: str(work / f"clips/{name}/{filename}") for name in artifacts}

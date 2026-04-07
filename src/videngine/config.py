@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+
 try:
     import tomllib
 except ModuleNotFoundError:
@@ -70,17 +71,19 @@ class AudioProfileConfig:
 @dataclass
 class AudioConfig:
     denoise: bool = True
-    profiles: dict[str, AudioProfileConfig] = field(default_factory=lambda: {
-        "macbook": AudioProfileConfig(),
-        "iphone": AudioProfileConfig(
-            compress_threshold_db=-18.0,
-            compress_ratio=1.5,
-            compress_attack_ms=10.0,
-            compress_release_ms=250.0,
-            compress_knee_db=8.0,
-            compress_makeup_db=1.0,
-        ),
-    })
+    profiles: dict[str, AudioProfileConfig] = field(
+        default_factory=lambda: {
+            "macbook": AudioProfileConfig(),
+            "iphone": AudioProfileConfig(
+                compress_threshold_db=-18.0,
+                compress_ratio=1.5,
+                compress_attack_ms=10.0,
+                compress_release_ms=250.0,
+                compress_knee_db=8.0,
+                compress_makeup_db=1.0,
+            ),
+        }
+    )
 
     def get_profile(self, name: str) -> AudioProfileConfig:
         """Get a named profile, falling back to macbook defaults."""

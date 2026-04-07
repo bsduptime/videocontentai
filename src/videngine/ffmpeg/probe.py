@@ -23,8 +23,10 @@ def probe(file_path: str) -> MediaInfo:
     """Run ffprobe and return structured media info."""
     cmd = [
         "ffprobe",
-        "-v", "quiet",
-        "-print_format", "json",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
         "-show_format",
         "-show_streams",
         file_path,
@@ -71,9 +73,13 @@ def detect_recording_device(file_path: str) -> str:
     Returns: "iphone" or "macbook" (default fallback).
     """
     cmd = [
-        "ffprobe", "-v", "quiet",
-        "-print_format", "json",
-        "-show_format", "-show_streams",
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_format",
+        "-show_streams",
         file_path,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)

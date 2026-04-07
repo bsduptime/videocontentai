@@ -34,12 +34,17 @@ def run_transcribe(source_file: str, working_dir: str, config: Config) -> Transc
     # Step 3: Run whisper-cli
     whisper_cmd = [
         "whisper-cli",
-        "-m", config.whisper.model_path,
-        "-l", config.whisper.language,
-        "-t", str(config.whisper.threads),
+        "-m",
+        config.whisper.model_path,
+        "-l",
+        config.whisper.language,
+        "-t",
+        str(config.whisper.threads),
         "--output-json-full",
-        "-of", str(work / "whisper_out"),
-        "-f", str(audio_path),
+        "-of",
+        str(work / "whisper_out"),
+        "-f",
+        str(audio_path),
     ]
     result = subprocess.run(whisper_cmd, capture_output=True, text=True)
     if result.returncode != 0:
@@ -59,9 +64,7 @@ def run_transcribe(source_file: str, working_dir: str, config: Config) -> Transc
     return transcript
 
 
-def _parse_whisper_output(
-    raw: dict, source_file: str, duration: float
-) -> Transcript:
+def _parse_whisper_output(raw: dict, source_file: str, duration: float) -> Transcript:
     """Parse whisper.cpp --output-json-full JSON into our Transcript model."""
     segments = []
     for i, seg in enumerate(raw.get("transcription", [])):
@@ -71,20 +74,24 @@ def _parse_whisper_output(
             text = token.get("text", "").strip()
             if not text:
                 continue
-            words.append(Word(
-                text=text,
-                start=_ts_to_seconds(token.get("offsets", {}).get("from", 0)),
-                end=_ts_to_seconds(token.get("offsets", {}).get("to", 0)),
-                confidence=token.get("p", 1.0),
-            ))
+            words.append(
+                Word(
+                    text=text,
+                    start=_ts_to_seconds(token.get("offsets", {}).get("from", 0)),
+                    end=_ts_to_seconds(token.get("offsets", {}).get("to", 0)),
+                    confidence=token.get("p", 1.0),
+                )
+            )
 
-        segments.append(TranscriptSegment(
-            id=i,
-            start=_ts_to_seconds(seg.get("offsets", {}).get("from", 0)),
-            end=_ts_to_seconds(seg.get("offsets", {}).get("to", 0)),
-            text=seg.get("text", "").strip(),
-            words=words,
-        ))
+        segments.append(
+            TranscriptSegment(
+                id=i,
+                start=_ts_to_seconds(seg.get("offsets", {}).get("from", 0)),
+                end=_ts_to_seconds(seg.get("offsets", {}).get("to", 0)),
+                text=seg.get("text", "").strip(),
+                words=words,
+            )
+        )
 
     language = raw.get("result", {}).get("language", "en")
 
@@ -138,7 +145,11 @@ def run_visual_analysis(
     # Save to working dir
     context_path = work / "visual_context.json"
     context_path.write_text(context.model_dump_json(indent=2))
-    logger.info("Visual analysis: %d scene changes, avg %.1fs segments", len(scene_changes), context.avg_scene_duration)
+    logger.info(
+        "Visual analysis: %d scene changes, avg %.1fs segments",
+        len(scene_changes),
+        context.avg_scene_duration,
+    )
 
     return context
 
@@ -160,10 +171,12 @@ def _parse_scene_scores(scores_path: str) -> list[SceneChange]:
         pts_match = pts_pattern.search(lines[i])
         score_match = score_pattern.search(lines[i + 1])
         if pts_match and score_match:
-            changes.append(SceneChange(
-                timestamp=float(pts_match.group(1)),
-                score=float(score_match.group(1)),
-            ))
+            changes.append(
+                SceneChange(
+                    timestamp=float(pts_match.group(1)),
+                    score=float(score_match.group(1)),
+                )
+            )
         i += 2
 
     return changes
@@ -191,10 +204,14 @@ def _build_visual_segments(
 ) -> list[VisualSegment]:
     """Build visual segments from gaps between scene changes."""
     if not scene_changes:
-        return [VisualSegment(
-            start=0.0, end=total_duration, duration=total_duration,
-            motion_level="low",
-        )]
+        return [
+            VisualSegment(
+                start=0.0,
+                end=total_duration,
+                duration=total_duration,
+                motion_level="low",
+            )
+        ]
 
     segments: list[VisualSegment] = []
     boundaries = [0.0] + [sc.timestamp for sc in scene_changes] + [total_duration]
@@ -221,11 +238,13 @@ def _build_visual_segments(
         else:
             motion = "low"
 
-        segments.append(VisualSegment(
-            start=round(start, 3),
-            end=round(end, 3),
-            duration=round(dur, 3),
-            motion_level=motion,
-        ))
+        segments.append(
+            VisualSegment(
+                start=round(start, 3),
+                end=round(end, 3),
+                duration=round(dur, 3),
+                motion_level=motion,
+            )
+        )
 
     return segments

@@ -27,7 +27,6 @@ def run_intro_outro(
     Hook clips are passed through unchanged.
     Returns {spec_name: path}.
     """
-    work = Path(working_dir)
     plans_by_name = {p.spec_name: p for p in cut_plans}
 
     # Load TTS model once if voice is enabled
@@ -95,7 +94,9 @@ def run_intro_outro(
             # Concat with stream copy — templates are pre-cropped to match
             concat_list_path = clip_dir / "intro_outro_concat.txt"
             concat_content, concat_cmd = concat_segments(
-                parts, str(output_path), str(concat_list_path),
+                parts,
+                str(output_path),
+                str(concat_list_path),
             )
             concat_list_path.write_text(concat_content)
             _run_ffmpeg(concat_cmd)
@@ -133,8 +134,10 @@ def _load_tts(config: Config, working_dir: str):
     """Load TTS model and prepare reference audio. Returns (model, ref_audio_path) or (None, None)."""
     try:
         import torch
+
         try:
             import perth
+
             if perth.PerthImplicitWatermarker is None:
                 perth.PerthImplicitWatermarker = perth.DummyWatermarker
         except ImportError:
@@ -161,11 +164,16 @@ def _ensure_wav(audio_path: str, working_dir: str) -> str:
         return str(wav_path)
 
     cmd = [
-        "ffmpeg", "-y",
-        "-i", audio_path,
-        "-acodec", "pcm_s16le",
-        "-ar", "22050",
-        "-ac", "1",
+        "ffmpeg",
+        "-y",
+        "-i",
+        audio_path,
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "22050",
+        "-ac",
+        "1",
         str(wav_path),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -186,16 +194,24 @@ def _generate_narration(model, text: str, ref_audio: str, output_path: str) -> N
 def _mix_audio(video_path: str, audio_path: str, output_path: str) -> None:
     """Mix narration audio over a video, keeping original audio underneath."""
     cmd = [
-        "ffmpeg", "-y",
-        "-i", video_path,
-        "-i", audio_path,
+        "ffmpeg",
+        "-y",
+        "-i",
+        video_path,
+        "-i",
+        audio_path,
         "-filter_complex",
         "[0:a]volume=0.3[bg];[1:a]volume=1.0[narr];[bg][narr]amix=inputs=2:duration=first[aout]",
-        "-map", "0:v",
-        "-map", "[aout]",
-        "-c:v", "copy",
-        "-c:a", "aac",
-        "-b:a", "192k",
+        "-map",
+        "0:v",
+        "-map",
+        "[aout]",
+        "-c:v",
+        "copy",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
         output_path,
     ]
     _run_ffmpeg(cmd)

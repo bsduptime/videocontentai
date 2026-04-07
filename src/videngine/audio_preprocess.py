@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import logging
 import subprocess
-import types
 import sys
+import types
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -30,13 +30,15 @@ def _patch_torchaudio_compat() -> None:
 
     try:
         from torchaudio.backend.common import AudioMetaData  # noqa: F401
+
         return  # import works, no patch needed
     except (ImportError, ModuleNotFoundError):
         pass
 
     class AudioMetaData:
-        def __init__(self, sample_rate=0, num_frames=0, num_channels=0,
-                     bits_per_sample=0, encoding=""):
+        def __init__(
+            self, sample_rate=0, num_frames=0, num_channels=0, bits_per_sample=0, encoding=""
+        ):
             self.sample_rate = sample_rate
             self.num_frames = num_frames
             self.num_channels = num_channels
@@ -69,12 +71,17 @@ def extract_audio_48k(video_path: str, output_wav: str) -> None:
     """Extract audio from video as 48kHz mono WAV (for DeepFilterNet)."""
     result = subprocess.run(
         [
-            "ffmpeg", "-y",
-            "-i", video_path,
+            "ffmpeg",
+            "-y",
+            "-i",
+            video_path,
             "-vn",
-            "-acodec", "pcm_s16le",
-            "-ar", "48000",
-            "-ac", "1",
+            "-acodec",
+            "pcm_s16le",
+            "-ar",
+            "48000",
+            "-ac",
+            "1",
             output_wav,
         ],
         capture_output=True,
@@ -129,14 +136,24 @@ def replace_audio_track(
     """Replace a video's audio track with a WAV file. Video stream-copied."""
     result = subprocess.run(
         [
-            "ffmpeg", "-y",
-            "-i", video_path,
-            "-i", audio_wav,
-            "-map", "0:v",
-            "-map", "1:a",
-            "-c:v", "copy",
-            "-c:a", "aac", "-b:a", "192k",
-            "-ac", "2",
+            "ffmpeg",
+            "-y",
+            "-i",
+            video_path,
+            "-i",
+            audio_wav,
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-ac",
+            "2",
             output_path,
         ],
         capture_output=True,

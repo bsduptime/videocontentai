@@ -9,7 +9,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # --- Transcript (Stage 1 → Stage 2) ---
 
 
@@ -87,6 +86,7 @@ class VisualContext(BaseModel):
 
 class SourceContext(BaseModel):
     """Describes the source video format and tone — passed to the AI for context."""
+
     format: str = ""  # "screen recording with narration", "talking-head, iPhone vertical"
     aspect_ratio: str = ""  # "16:9", "9:16"
     duration_range: list[float] = Field(default_factory=list)  # [min, max] expected source length
@@ -103,17 +103,22 @@ class CutSpec(BaseModel):
     editorial_lens: str = ""  # cutting guidance for the AI
     is_hook: bool = False  # True for the 7-15s hook spec
     prepend_hook: bool = False  # True = prepend the hook clip to this cut
-    mood_options: list[str] = Field(default_factory=list)  # mood names from moods.json — agent picks one
+    mood_options: list[str] = Field(
+        default_factory=list
+    )  # mood names from moods.json — agent picks one
     audio_profile: str = "macbook"  # audio preprocessing profile ("macbook", "iphone")
 
 
 class Mood(BaseModel):
     """A music mood from moods.json — maps to audio files at assets/music/{file}."""
+
     name: str
     valence: str = ""  # "positive" or "negative"
     arousal: str = ""  # "high" or "low"
     bpm: int = 120
-    files: list[str] = Field(default_factory=list)  # e.g. ["drive-1.wav", "drive-2.wav", "drive-3.wav"]
+    files: list[str] = Field(
+        default_factory=list
+    )  # e.g. ["drive-1.wav", "drive-2.wav", "drive-3.wav"]
     used_by: list[str] = Field(default_factory=list)
     description: str = ""
     generation_prompt: str = ""
@@ -121,11 +126,13 @@ class Mood(BaseModel):
 
 class MoodsConfig(BaseModel):
     """Top-level structure of moods.json."""
+
     moods: list[Mood] = Field(default_factory=list)
 
 
 class WatermarkPosition(BaseModel):
     """Watermark overlay position and appearance for a specific aspect ratio."""
+
     scale: float = 0.40
     opacity: float = 0.9
     x: str = "W-w-65"  # ffmpeg overlay x expression
@@ -134,6 +141,7 @@ class WatermarkPosition(BaseModel):
 
 class Branding(BaseModel):
     """Per-pipeline branding assets — intro/outro templates and watermark."""
+
     intro_16x9: str = ""
     intro_9x16: str = ""
     outro_16x9: str = ""
@@ -145,6 +153,7 @@ class Branding(BaseModel):
 
 class CutSpecFile(BaseModel):
     """Top-level structure of a cut spec JSON file."""
+
     pipeline: str = ""  # "dbexpertai-brand-portrait", "founder-personal-landscape"
     branding: Branding = Field(default_factory=Branding)
     source: SourceContext = Field(default_factory=SourceContext)
@@ -200,6 +209,7 @@ class DroppedSegment(BaseModel):
 
 class VisualEffect(BaseModel):
     """A zoom or text overlay effect to apply during the watermark re-encode pass."""
+
     effect_type: str  # "zoom" or "text_overlay"
     start: float  # seconds — effect start time (relative to the cut clip)
     end: float  # seconds — effect end time

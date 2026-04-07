@@ -234,8 +234,7 @@ def format_transcript_for_prompt(segments: list) -> str:
         lines.append(f"Segment {seg.id} {timestamp}: {seg.text}")
         if seg.words:
             word_times = "  Words: " + " | ".join(
-                f"{w.text}({_format_time(w.start)}-{_format_time(w.end)})"
-                for w in seg.words
+                f"{w.text}({_format_time(w.start)}-{_format_time(w.end)})" for w in seg.words
             )
             lines.append(word_times)
     return "\n".join(lines)

@@ -9,8 +9,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from ..config import Config
 from ..audio_preprocess import preprocess_audio
+from ..config import Config
 from ..ffmpeg.commands import (
     compress_audio,
     concat_segments,
@@ -73,7 +73,9 @@ def run_cut(
         concat_path = clip_dir / "concat.mp4"
         concat_list_path = clip_dir / "concat_list.txt"
         concat_content, concat_cmd = concat_segments(
-            segment_paths, str(concat_path), str(concat_list_path),
+            segment_paths,
+            str(concat_path),
+            str(concat_list_path),
         )
         concat_list_path.write_text(concat_content)
         _run_ffmpeg(concat_cmd)
@@ -116,7 +118,9 @@ def run_cut(
         # Step 3b: Dynamic compression (profile-specific settings)
         compressed_path = clip_dir / "compressed.mp4"
         compress_cmd = compress_audio(
-            str(pre_compress_path), str(compressed_path), config.encoding,
+            str(pre_compress_path),
+            str(compressed_path),
+            config.encoding,
             threshold_db=audio_profile.compress_threshold_db,
             ratio=audio_profile.compress_ratio,
             attack_ms=audio_profile.compress_attack_ms,
@@ -131,7 +135,9 @@ def run_cut(
         # Step 3c: Loudness normalize (two-pass EBU R128, audio re-encode, video copy)
         normalized_path = clip_dir / "normalized.mp4"
         measurement = _normalize_loudness(
-            str(pre_norm_path), str(normalized_path), config,
+            str(pre_norm_path),
+            str(normalized_path),
+            config,
         )
         if measurement:
             logger.info(
@@ -156,8 +162,11 @@ def run_cut(
             logger.info("%-20s mood=%-8s file=%s", plan.spec_name, mood_name, music_file)
             music_log[plan.spec_name] = {"mood": mood_name, "file": music_file}
             mix_cmd = mix_background_music(
-                str(pre_music_path), music_path, str(raw_path),
-                config.encoding, music_volume=config.video.music_volume,
+                str(pre_music_path),
+                music_path,
+                str(raw_path),
+                config.encoding,
+                music_volume=config.video.music_volume,
             )
             _run_ffmpeg(mix_cmd)
         else:
@@ -255,8 +264,12 @@ def _normalize_loudness(
 
     # Pass 2: apply
     cmd = loudnorm_apply(
-        input_path, output_path, config.encoding,
-        target_lufs=target, true_peak=tp, lra=lra,
+        input_path,
+        output_path,
+        config.encoding,
+        target_lufs=target,
+        true_peak=tp,
+        lra=lra,
         measured_i=measurement.input_i,
         measured_tp=measurement.input_tp,
         measured_lra=measurement.input_lra,

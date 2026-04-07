@@ -38,9 +38,7 @@ class AIClient:
 
         Returns the parsed tool input (cut plan dict).
         """
-        return self._call_tool(
-            system_prompt, user_prompt, CREATE_CUT_PLAN_TOOL, "create_cut_plan"
-        )
+        return self._call_tool(system_prompt, user_prompt, CREATE_CUT_PLAN_TOOL, "create_cut_plan")
 
     def _call_tool(
         self,

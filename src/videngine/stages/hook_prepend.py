@@ -47,11 +47,7 @@ def run_hook_prepend(
             continue
 
         # Only prepend if this cut's spec says prepend_hook=true and we have a hook
-        should_prepend = (
-            hook_path is not None
-            and spec is not None
-            and spec.prepend_hook
-        )
+        should_prepend = hook_path is not None and spec is not None and spec.prepend_hook
 
         if should_prepend:
             concat_list_path = clip_dir / "hook_concat.txt"
