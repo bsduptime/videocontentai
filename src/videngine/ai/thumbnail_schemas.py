@@ -76,10 +76,10 @@ GENERATE_THUMBNAIL_CONCEPT_TOOL = {
             },
             "text_position": {
                 "type": "string",
-                "enum": ["upper_left", "upper_right"],
+                "enum": ["upper_right", "upper_left"],
                 "description": (
-                    "Where to place the hook text. Position text on the opposite "
-                    "side from the face. If face is right, text goes upper_left."
+                    "Where to place the hook text. Default upper_right — face is "
+                    "on the left looking right, text on the right where gaze leads."
                 ),
             },
         },

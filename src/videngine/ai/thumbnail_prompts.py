@@ -32,12 +32,15 @@ Determined/focused/curious beats shocked/surprised. The face is an emotional anc
 colors (orange, yellow) against cool primary colors (blue, teal). The thumbnail must \
 pop against YouTube's white/dark interface.
 
-5. **Composition**: Face on one side (typically right), text on the opposite side (upper area). \
+5. **Composition**: Face on the LEFT side looking RIGHT, hook text on the upper RIGHT. \
+Viewers scan left-to-right: face grabs attention first, gaze directs eyes to the hook text. \
 Never place important elements in the bottom-right (timestamp zone) or bottom edge (progress bar).
 
 6. **Flux prompt**: Describe a clean, high-contrast background scene. Include relevant \
-tech visual elements. Do NOT describe text — that is rendered programmatically. \
-Style should be professional, modern, with good lighting.
+tech visual elements. Do NOT describe text or faces — text is rendered programmatically \
+and the creator's face is composited separately on the left side. Leave the left ~40% \
+of the scene relatively clean/dark for face placement. Style should be professional, \
+modern, with good lighting.
 
 ## For tech/database content specifically
 

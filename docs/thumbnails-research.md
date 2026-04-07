@@ -364,7 +364,7 @@ Based on this research, combining what works for tech/database channels:
 
 ### Layout
 
-Clean architecture diagram or technology logo (center-left, ~60%) + your face with a determined/intense expression (right side, ~30%) + 2-4 word outcome hook (upper area). As audience grows and recognizes you, gradually increase face prominence.
+Your face on the LEFT side looking RIGHT (determined/intense expression, ~30-40%) + outcome hook text on the upper RIGHT (~30%) + tech visual elements on the right (~30%). Viewers scan left-to-right: face grabs attention, gaze directs to hook text. As audience grows and recognizes you, gradually increase face prominence.
 
 ### Color palette
 

@@ -343,17 +343,17 @@ def _fallback_base_image(
     strip_y = int(h * 0.85)
     draw.rectangle([(0, strip_y), (w, strip_y + strip_h)], fill=accent)
 
-    # Composite face reference on right side
+    # Composite face reference on left side (looking right → guides eye to hook text)
     if face_ref:
         face = face_ref.copy()
-        # Scale face to fill ~45% of height
+        # Scale face to fill ~85% of height
         target_h = int(h * 0.85)
         aspect = face.width / face.height
         target_w = int(target_h * aspect)
         face = face.resize((target_w, target_h), Image.LANCZOS)
 
-        # Position: right side, vertically centered
-        x = w - target_w - int(w * 0.02)
+        # Position: left side, vertically centered
+        x = int(w * 0.02)
         y = (h - target_h) // 2
 
         # If face has alpha channel, use it as mask
