@@ -259,7 +259,7 @@ class ThumbnailConcept(BaseModel):
     accent_color: str = "#F5A623"  # hex accent color
     visual_elements: list[str] = Field(default_factory=list)  # scene elements
     flux_prompt: str = ""  # image generation prompt for Flux Kontext
-    text_position: str = "upper_right"  # "upper_right" (default: face left, text right)
+    text_position: str = "upper_left"  # face right, looking left toward text
 
 
 # --- JobState (Resumability) ---
