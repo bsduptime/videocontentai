@@ -37,11 +37,11 @@ looking LEFT toward the text and visuals (~30%), hook text upper-left. The face'
 directs the viewer's eyes toward the key visual elements and text. \
 Never place important elements in the bottom-right (timestamp zone) or bottom edge (progress bar).
 
-6. **Flux prompt**: Describe a clean, high-contrast background scene. Include relevant \
-tech visual elements. Do NOT describe text or faces — text is rendered programmatically \
-and the creator's face is composited separately on the right side. Leave the right ~35% \
-of the scene relatively clean/dark for face placement. Style should be professional, \
-modern, with good lighting.
+6. **Flux prompt**: Describe the scene with a man on the RIGHT side of frame. Include \
+the person's positioning (right side, looking slightly left toward visuals), expression \
+(determined, focused, intense), and the tech visual elements on the left/center. \
+Do NOT describe text overlays — those are rendered programmatically. \
+Style should be professional, modern, cinematic lighting, high contrast, dark background.
 
 ## For tech/database content specifically
 

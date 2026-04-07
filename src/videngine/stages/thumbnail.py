@@ -53,9 +53,10 @@ def run_thumbnail(
     client = AIClient(config.ai)
     template = branding.thumbnail if branding else ThumbnailTemplate()
 
-    # Load face reference
+    # Load face reference (Image for Pillow fallback, path for ComfyUI/PuLID)
     brand = source_context.brand if source_context else ""
     face_ref = _load_face_reference(brand, config.thumbnail.face_reference_dir)
+    face_ref_path = _find_face_reference_path(brand, config.thumbnail.face_reference_dir)
 
     # Load watermark/logo for branding overlay
     logo = _load_logo(branding)
@@ -72,11 +73,11 @@ def run_thumbnail(
         concept_path.write_text(concept.model_dump_json(indent=2))
         logger.info("Thumbnail concept for %s: %s", plan.spec_name, concept.hook_text)
 
-        # 2. Generate base image: ComfyUI local → Flux cloud API → Pillow fallback
+        # 2. Generate base image: ComfyUI+PuLID → Flux cloud API → Pillow fallback
         base = None
         if not config.thumbnail.fallback_only:
-            # Try local ComfyUI first (free, ~24s)
-            base = _generate_comfyui_image(concept, config)
+            # Try local ComfyUI first (with PuLID face if available, ~48s; without ~24s)
+            base = _generate_comfyui_image(concept, config, face_ref_path=face_ref_path)
             if base:
                 logger.info("Generated base image via local ComfyUI for %s", plan.spec_name)
 
@@ -125,10 +126,14 @@ def _generate_concept(
 def _generate_comfyui_image(
     concept: ThumbnailConcept,
     config: Config,
+    face_ref_path: str | None = None,
 ) -> Image.Image | None:
-    """Generate base image via local ComfyUI + Flux Schnell."""
-    import io
+    """Generate base image via local ComfyUI + Flux Schnell.
 
+    If face_ref_path is provided and PuLID nodes are available, generates
+    the scene with the creator's face integrated (matching lighting/style).
+    Otherwise falls back to background-only generation.
+    """
     url = config.thumbnail.comfyui_url
 
     # Check if ComfyUI is reachable
@@ -140,16 +145,44 @@ def _generate_comfyui_image(
         logger.debug("ComfyUI not reachable at %s", url)
         return None
 
-    # Build Flux Schnell workflow
-    workflow = {
-        "3": {
+    use_pulid = False
+    if face_ref_path:
+        # Check if PuLID nodes are available
+        try:
+            info_resp = httpx.get(f"{url}/object_info/ApplyPulidFlux", timeout=5.0)
+            if info_resp.status_code == 200:
+                # Copy face image into ComfyUI input dir
+                import subprocess
+
+                subprocess.run(
+                    ["docker", "exec", "comfyui", "mkdir", "-p", "/opt/ComfyUI/input"],
+                    capture_output=True,
+                )
+                subprocess.run(
+                    ["docker", "cp", face_ref_path, "comfyui:/opt/ComfyUI/input/face_ref.png"],
+                    capture_output=True,
+                )
+                use_pulid = True
+                logger.info("Using PuLID for face-integrated generation")
+        except Exception:
+            pass
+
+    if use_pulid:
+        workflow = _build_pulid_workflow(concept)
+    else:
+        workflow = _build_flux_workflow(concept)
+
+    return _comfyui_submit_and_poll(url, workflow)
+
+
+def _build_flux_workflow(concept: ThumbnailConcept) -> dict:
+    """Build a plain Flux Schnell workflow (background only, no face)."""
+    return {
+        "1": {
             "class_type": "UNETLoader",
-            "inputs": {
-                "unet_name": "flux1-schnell.safetensors",
-                "weight_dtype": "fp8_e4m3fn",
-            },
+            "inputs": {"unet_name": "flux1-schnell.safetensors", "weight_dtype": "fp8_e4m3fn"},
         },
-        "4": {
+        "2": {
             "class_type": "DualCLIPLoader",
             "inputs": {
                 "clip_name1": "clip_l.safetensors",
@@ -157,25 +190,22 @@ def _generate_comfyui_image(
                 "type": "flux",
             },
         },
-        "5": {
-            "class_type": "VAELoader",
-            "inputs": {"vae_name": "ae.safetensors"},
-        },
-        "6": {
+        "3": {"class_type": "VAELoader", "inputs": {"vae_name": "ae.safetensors"}},
+        "4": {
             "class_type": "CLIPTextEncode",
-            "inputs": {"text": concept.flux_prompt, "clip": ["4", 0]},
+            "inputs": {"text": concept.flux_prompt, "clip": ["2", 0]},
         },
-        "7": {
+        "5": {
             "class_type": "EmptyLatentImage",
             "inputs": {"width": YOUTUBE_SIZE[0], "height": YOUTUBE_SIZE[1], "batch_size": 1},
         },
-        "8": {
+        "6": {
             "class_type": "KSampler",
             "inputs": {
-                "model": ["3", 0],
-                "positive": ["6", 0],
-                "negative": ["6", 0],
-                "latent_image": ["7", 0],
+                "model": ["1", 0],
+                "positive": ["4", 0],
+                "negative": ["4", 0],
+                "latent_image": ["5", 0],
                 "seed": hash(concept.hook_text) % 2**32,
                 "steps": 4,
                 "cfg": 1.0,
@@ -184,19 +214,87 @@ def _generate_comfyui_image(
                 "denoise": 1.0,
             },
         },
-        "9": {
-            "class_type": "VAEDecode",
-            "inputs": {"samples": ["8", 0], "vae": ["5", 0]},
-        },
-        "10": {
+        "7": {"class_type": "VAEDecode", "inputs": {"samples": ["6", 0], "vae": ["3", 0]}},
+        "save": {
             "class_type": "SaveImage",
-            "inputs": {"images": ["9", 0], "filename_prefix": "videngine_thumb"},
+            "inputs": {"images": ["7", 0], "filename_prefix": "videngine_thumb"},
         },
     }
 
+
+def _build_pulid_workflow(concept: ThumbnailConcept) -> dict:
+    """Build a PuLID + Flux Schnell workflow (face integrated into scene)."""
+    return {
+        "1": {
+            "class_type": "UNETLoader",
+            "inputs": {"unet_name": "flux1-schnell.safetensors", "weight_dtype": "fp8_e4m3fn"},
+        },
+        "2": {
+            "class_type": "DualCLIPLoader",
+            "inputs": {
+                "clip_name1": "clip_l.safetensors",
+                "clip_name2": "t5xxl_fp8_e4m3fn.safetensors",
+                "type": "flux",
+            },
+        },
+        "3": {"class_type": "VAELoader", "inputs": {"vae_name": "ae.safetensors"}},
+        "4": {
+            "class_type": "PulidFluxModelLoader",
+            "inputs": {"pulid_file": "pulid_flux_v0.9.1.safetensors"},
+        },
+        "5": {"class_type": "PulidFluxInsightFaceLoader", "inputs": {"provider": "CUDA"}},
+        "6": {"class_type": "PulidFluxEvaClipLoader", "inputs": {}},
+        "7": {"class_type": "LoadImage", "inputs": {"image": "face_ref.png"}},
+        "8": {
+            "class_type": "ApplyPulidFlux",
+            "inputs": {
+                "model": ["1", 0],
+                "pulid_flux": ["4", 0],
+                "eva_clip": ["6", 0],
+                "face_analysis": ["5", 0],
+                "image": ["7", 0],
+                "weight": 0.85,
+                "start_at": 0.0,
+                "end_at": 1.0,
+            },
+        },
+        "9": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": concept.flux_prompt, "clip": ["2", 0]},
+        },
+        "10": {
+            "class_type": "EmptyLatentImage",
+            "inputs": {"width": YOUTUBE_SIZE[0], "height": YOUTUBE_SIZE[1], "batch_size": 1},
+        },
+        "11": {
+            "class_type": "KSampler",
+            "inputs": {
+                "model": ["8", 0],
+                "positive": ["9", 0],
+                "negative": ["9", 0],
+                "latent_image": ["10", 0],
+                "seed": hash(concept.hook_text) % 2**32,
+                "steps": 4,
+                "cfg": 1.0,
+                "sampler_name": "euler",
+                "scheduler": "simple",
+                "denoise": 1.0,
+            },
+        },
+        "12": {"class_type": "VAEDecode", "inputs": {"samples": ["11", 0], "vae": ["3", 0]}},
+        "save": {
+            "class_type": "SaveImage",
+            "inputs": {"images": ["12", 0], "filename_prefix": "videngine_pulid"},
+        },
+    }
+
+
+def _comfyui_submit_and_poll(url: str, workflow: dict) -> Image.Image | None:
+    """Submit a ComfyUI workflow and poll for the result image."""
+    import io
+
     try:
         with httpx.Client(timeout=600.0) as http:
-            # Queue the prompt
             resp = http.post(
                 f"{url}/prompt",
                 json={"prompt": workflow},
@@ -222,12 +320,11 @@ def _generate_comfyui_image(
                     return None
 
                 outputs = history[prompt_id].get("outputs", {})
-                if "10" in outputs:
-                    images = outputs["10"].get("images", [])
+                if "save" in outputs:
+                    images = outputs["save"].get("images", [])
                     if not images:
                         return None
 
-                    # Fetch the generated image via ComfyUI's view endpoint
                     img_info = images[0]
                     view_resp = http.get(
                         f"{url}/view",
@@ -578,6 +675,18 @@ def _compose_vertical(
 
 
 # --- Helpers ---
+
+
+def _find_face_reference_path(brand: str, face_dir: str) -> str | None:
+    """Find the file path for a brand's face reference photo."""
+    if not brand:
+        return None
+    resolved_dir = _resolve_asset(face_dir)
+    for ext in ("png", "jpg", "jpeg"):
+        face_path = resolved_dir / f"{brand}.{ext}"
+        if face_path.exists():
+            return str(face_path.resolve())
+    return None
 
 
 def _load_face_reference(brand: str, face_dir: str) -> Image.Image | None:
