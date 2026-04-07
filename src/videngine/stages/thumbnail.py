@@ -151,21 +151,18 @@ def _generate_comfyui_image(
         try:
             info_resp = httpx.get(f"{url}/object_info/ApplyPulidFlux", timeout=5.0)
             if info_resp.status_code == 200:
-                # Copy face image into ComfyUI input dir
-                import subprocess
+                # Copy face reference into ComfyUI input dir (volume-mounted)
+                import shutil
 
-                subprocess.run(
-                    ["docker", "exec", "comfyui", "mkdir", "-p", "/opt/ComfyUI/input"],
-                    capture_output=True,
-                )
-                subprocess.run(
-                    ["docker", "cp", face_ref_path, "comfyui:/opt/ComfyUI/input/face_ref.png"],
-                    capture_output=True,
-                )
-                use_pulid = True
-                logger.info("Using PuLID for face-integrated generation")
+                comfyui_input = Path("/mnt/sdcard/comfyui-input")
+                if comfyui_input.exists():
+                    shutil.copy2(face_ref_path, comfyui_input / "face_ref.png")
+                    use_pulid = True
+                    logger.info("Using PuLID for face-integrated generation")
+                else:
+                    logger.warning("ComfyUI input dir not found at %s", comfyui_input)
         except Exception:
-            pass
+            logger.debug("PuLID not available, falling back to plain Flux")
 
     if use_pulid:
         workflow = _build_pulid_workflow(concept)
