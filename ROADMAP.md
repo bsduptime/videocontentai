@@ -23,7 +23,7 @@ One long video → suite of platform-optimized clips at different lengths.
 - [x] Multi-cut analyze stage: Claude scores once, then plans each cut spec independently
 - [x] Per-cut editorial lens (editorial_lens field per cut spec, passed to Claude)
 - [x] Cut-level intro/outro narration planning (Claude generates narration text per cut)
-- [ ] Brand-aware AI prompt (brand name, voice/tone, terminology in selection prompt)
+- [x] Brand-aware AI prompt (brand name, voice/tone, terminology in selection prompt)
 
 ## Phase 3 — Thumbnails + Visual Assets
 
