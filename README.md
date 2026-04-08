@@ -57,7 +57,7 @@ blur_strength = 21
 
 **Standalone command:** `/replace-background input.mp4 background.png [output.mp4]`
 
-The RVM ONNX model (~14MB) auto-downloads on first use. For faster processing, install `onnxruntime-gpu` (CUDA provider gives ~10-20x speedup over CPU).
+The RVM ONNX model (~14MB) auto-downloads on first use. On Jetson, install `onnxruntime-gpu` from NVIDIA's Jetson AI Lab PyPI (`pip install onnxruntime-gpu --index-url https://pypi.jetson-ai-lab.io/jp6/cu126/+simple`). Matte generation caps at 30fps to avoid unnecessary work on high-fps sources.
 
 ### Thumbnail Generation (Stage 8)
 

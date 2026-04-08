@@ -11,7 +11,41 @@ from pathlib import Path
 import numpy as np
 
 from ..config import BackgroundConfig, Config, EncodingConfig
-from ..ffmpeg.commands import composite_with_matte
+from ..ffmpeg.commands import _video_encode_args, composite_with_matte
+
+
+# FFmpeg pipe for matte encoding — avoids cv2.VideoWriter's slow software encode
+def _open_matte_writer(
+    matte_path: str,
+    width: int,
+    height: int,
+    fps: float,
+    encoding: EncodingConfig,
+) -> subprocess.Popen:
+    """Open an FFmpeg subprocess that accepts raw grayscale frames on stdin."""
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "gray",
+        "-s",
+        f"{width}x{height}",
+        "-r",
+        str(fps),
+        "-i",
+        "pipe:0",
+        "-pix_fmt",
+        "yuv420p",
+        *_video_encode_args(encoding),
+        "-an",
+        matte_path,
+    ]
+    return subprocess.Popen(
+        cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+    )
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +74,16 @@ def _generate_alpha_matte(
     model_path: str,
     encoding: EncodingConfig,
     downsample_ratio: float = 0.25,
+    max_fps: float = 30.0,
 ) -> None:
     """Run RVM on every frame and encode alpha matte as grayscale video.
 
     Uses onnxruntime with CUDA (falls back to CPU). The matte video is
     encoded as grayscale H.264 — white = foreground, black = background.
+
+    If source fps exceeds max_fps, frames are skipped to cap processing cost.
+    The matte is encoded at the capped rate; FFmpeg's composite filter handles
+    the fps mismatch via shortest=1.
     """
     import cv2
     import onnxruntime as ort
@@ -58,61 +97,89 @@ def _generate_alpha_matte(
     session = ort.InferenceSession(model_path, providers=use_providers)
 
     cap = cv2.VideoCapture(input_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    src_fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+    # Cap fps — skip frames if source is higher than needed
+    matte_fps = min(src_fps, max_fps)
+    frame_step = max(1, round(src_fps / matte_fps))
+    expected_frames = total_frames // frame_step
+    logger.info(
+        "Matte: %dx%d @ %.0ffps → processing every %d%s frame (%d frames)",
+        width,
+        height,
+        src_fps,
+        frame_step,
+        "st" if frame_step == 1 else ("nd" if frame_step == 2 else "th"),
+        expected_frames,
+    )
+
     # RVM recurrent states (initialized to zero)
     rec = [np.zeros((1, 1, 1, 1), dtype=np.float32)] * 4  # r1, r2, r3, r4
 
-    # Output writer — grayscale matte encoded as mp4
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    writer = cv2.VideoWriter(matte_path, fourcc, fps, (width, height), False)
+    downsample = np.array([downsample_ratio], dtype=np.float32)
 
+    # Encode matte via FFmpeg pipe (hardware-accelerated when available)
+    writer = _open_matte_writer(matte_path, width, height, matte_fps, encoding)
+
+    frame_idx = 0
     frame_count = 0
-    log_interval = max(1, total_frames // 20)  # log every 5%
+    log_interval = max(1, expected_frames // 20)  # log every 5%
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        # Preprocess: BGR -> RGB, normalize to [0,1], NCHW
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        inp = rgb.astype(np.float32) / 255.0
-        inp = np.transpose(inp, (2, 0, 1))[np.newaxis]  # (1, 3, H, W)
+            # Skip frames to match target fps
+            if frame_idx % frame_step != 0:
+                frame_idx += 1
+                continue
+            frame_idx += 1
 
-        # Run RVM
-        downsample = np.array([downsample_ratio], dtype=np.float32)
-        outputs = session.run(
-            None,
-            {
-                "src": inp,
-                "r1i": rec[0],
-                "r2i": rec[1],
-                "r3i": rec[2],
-                "r4i": rec[3],
-                "downsample_ratio": downsample,
-            },
-        )
+            # Preprocess: BGR -> RGB, normalize to [0,1], NCHW
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            inp = (np.transpose(rgb, (2, 0, 1))[np.newaxis]).astype(np.float32) / 255.0
 
-        # Outputs: fgr, pha, r1o, r2o, r3o, r4o
-        pha = outputs[1]  # (1, 1, H, W) alpha matte [0, 1]
-        rec = outputs[2:6]  # updated recurrent states
+            # Run RVM
+            outputs = session.run(
+                None,
+                {
+                    "src": inp,
+                    "r1i": rec[0],
+                    "r2i": rec[1],
+                    "r3i": rec[2],
+                    "r4i": rec[3],
+                    "downsample_ratio": downsample,
+                },
+            )
 
-        # Convert alpha to grayscale uint8
-        alpha = (pha[0, 0] * 255).clip(0, 255).astype(np.uint8)
-        writer.write(alpha)
+            # Outputs: fgr, pha, r1o, r2o, r3o, r4o
+            pha = outputs[1]  # (1, 1, H, W) alpha matte [0, 1]
+            rec = outputs[2:6]  # updated recurrent states
 
-        frame_count += 1
-        if frame_count % log_interval == 0:
-            pct = frame_count / total_frames * 100
-            logger.info("Matte generation: %d/%d frames (%.0f%%)", frame_count, total_frames, pct)
+            # Convert alpha to grayscale uint8, write raw bytes to FFmpeg
+            alpha = (pha[0, 0] * 255).clip(0, 255).astype(np.uint8)
+            writer.stdin.write(alpha.tobytes())
 
-    cap.release()
-    writer.release()
-    logger.info("Alpha matte saved: %s (%d frames)", matte_path, frame_count)
+            frame_count += 1
+            if frame_count % log_interval == 0:
+                pct = frame_count / expected_frames * 100
+                logger.info(
+                    "Matte generation: %d/%d frames (%.0f%%)", frame_count, expected_frames, pct
+                )
+    finally:
+        cap.release()
+        writer.stdin.close()
+        writer.wait()
+        if writer.returncode != 0:
+            stderr = writer.stderr.read().decode() if writer.stderr else ""
+            raise RuntimeError(f"FFmpeg matte encoding failed:\n{stderr[-500:]}")
+
+    logger.info("Alpha matte saved: %s (%d frames at %.0ffps)", matte_path, frame_count, matte_fps)
 
 
 def _generate_blur_background(
@@ -131,10 +198,7 @@ def _generate_blur_background(
         input_path,
         "-vf",
         f"boxblur={bs}:{bs}",
-        "-c:v",
-        "libx264",
-        "-crf",
-        "23",
+        *_video_encode_args(encoding),
         "-an",
         bg_path,
     ]
