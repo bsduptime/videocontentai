@@ -12,12 +12,14 @@ Raw Video → Transcribe → AI Edit Agent → Voice Clone → Assemble → Mult
 
 | Stage | What it does | Tool |
 |-------|-------------|------|
-| **Transcribe** | Extract audio, generate word-level timestamps | whisper.cpp (CUDA) |
-| **Analyze** | Select best segments, plan narrative, write narration scripts | Claude Opus (Anthropic API) |
-| **Voice** | Clone founder's voice for intro/outro narration | Chatterbox TTS (CUDA) |
-| **Assemble** | Cut segments, layer narration on templates, concat, watermark | FFmpeg |
-| **Render** | Output multiple aspect ratios for each platform | FFmpeg |
-| **Thumbnail** | Generate platform-specific thumbnails per cut | Claude + Flux Kontext API + Pillow |
+| **1. Transcribe** | Extract audio (48kHz), denoise, compress, transcribe, create clean source | DeepFilterNet3 + whisper.cpp (CUDA) |
+| **2. Analyze** | Score segments, plan cuts, write narration scripts | Claude Opus |
+| **3. Cut** | Extract segments, concat, loudness normalize, mix music | FFmpeg (stream copy + EBU R128) |
+| **4. Watermark** | Logo overlay + visual effects (zoom, text) | FFmpeg (h264_nvmpi) |
+| **5. Background** | Replace video background via person segmentation (optional) | RVM (ONNX) + FFmpeg |
+| **6. Intro/Outro** | Prepend/append branded templates + voice narration | Chatterbox TTS + FFmpeg |
+| **7. Hook Prepend** | Prepend hook clip to specified cuts | FFmpeg (stream copy) |
+| **8. Thumbnail** | AI concept → image generation → text/branding overlay | Claude + Flux/PuLID + Pillow |
 
 Each stage checkpoints to `job_state.json`. If anything fails, `videngine resume` picks up where it stopped.
 

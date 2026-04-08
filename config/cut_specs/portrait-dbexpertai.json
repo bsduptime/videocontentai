@@ -1,31 +1,12 @@
 {
   "pipeline": "dbexpertai-brand-portrait",
-  "branding": {
-    "intro_16x9": "assets/intros/dbexpert-intro-16x9.mp4",
-    "intro_9x16": "assets/intros/dbexpert-intro-9x16.mp4",
-    "outro_16x9": "assets/outros/dbexpert-outro-16x9.mp4",
-    "outro_9x16": "assets/outros/dbexpert-outro-9x16.mp4",
-    "watermark": "assets/watermarks/dbexpertai-watermark.png",
-    "watermark_9x16": {
-      "scale": 0.40,
-      "opacity": 0.9,
-      "x": "W-w-40",
-      "y": "H-h-65"
-    },
-    "thumbnail": {
-      "primary_color": "#336791",
-      "accent_color": "#F5A623",
-      "font_scale": 1.2,
-      "text_style": "line1_white_line2_red",
-      "person_description": "athletic man with blue eyes, wearing a plain black crew neck t-shirt with short sleeves, no jewelry no accessories no necklace, on the far right side of frame taking up 35 percent of the image, determined intense expression looking slightly to the left, bright blue eyes, cinematic dramatic lighting, high contrast"
-    }
-  },
   "source": {
     "brand": "dbexpertai",
     "format": "iPhone recording, podcast-style rant with opinion and stories",
     "aspect_ratio": "9:16",
     "duration_range": [180, 480],
-    "tone": "Educational but human. Teaching and proving with stories woven in — opinionated about databases and infrastructure."
+    "tone": "Educational but human. Teaching and proving with stories woven in — opinionated about databases and infrastructure.",
+    "audio_profile": "iphone"
   },
   "cuts": [
     {

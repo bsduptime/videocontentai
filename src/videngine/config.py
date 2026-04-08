@@ -99,6 +99,17 @@ class EncodingConfig:
 
 
 @dataclass
+class BackgroundConfig:
+    enabled: bool = False
+    background_type: str = "blur"  # "blur", "solid", "image"
+    background_image: str = ""  # path when type == "image"
+    blur_strength: int = 21  # boxblur radius (odd number)
+    solid_color: str = "#1a1a2e"  # hex color when type == "solid"
+    downsample_ratio: float = 0.25  # RVM internal resolution (0.25 = fast, 0.5 = better edges)
+    model: str = "rvm"  # "rvm" (future: "matanyone")
+
+
+@dataclass
 class ThumbnailConfig:
     enabled: bool = True
     comfyui_url: str = "http://localhost:8188"  # Local ComfyUI (preferred)
@@ -117,6 +128,7 @@ class Config:
     video: VideoConfig = field(default_factory=VideoConfig)
     audio: AudioConfig = field(default_factory=AudioConfig)
     encoding: EncodingConfig = field(default_factory=EncodingConfig)
+    background: BackgroundConfig = field(default_factory=BackgroundConfig)
     thumbnail: ThumbnailConfig = field(default_factory=ThumbnailConfig)
 
 
@@ -154,6 +166,7 @@ def load_config(config_path: str | Path | None = None) -> Config:
                 "voice": cfg.voice,
                 "video": cfg.video,
                 "encoding": cfg.encoding,
+                "background": cfg.background,
                 "thumbnail": cfg.thumbnail,
             }
             for section_name, target in section_map.items():
@@ -187,12 +200,15 @@ def load_config(config_path: str | Path | None = None) -> Config:
             "voice": cfg.voice,
             "video": cfg.video,
             "encoding": cfg.encoding,
+            "background": cfg.background,
             "thumbnail": cfg.thumbnail,
         }
         target = section_map.get(section_name)
         if target and hasattr(target, field_name):
             current = getattr(target, field_name)
-            if isinstance(current, int):
+            if isinstance(current, bool):
+                setattr(target, field_name, value.lower() in ("true", "1", "yes"))
+            elif isinstance(current, int):
                 setattr(target, field_name, int(value))
             elif isinstance(current, float):
                 setattr(target, field_name, float(value))

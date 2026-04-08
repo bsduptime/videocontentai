@@ -50,6 +50,17 @@ compress_release_ms = 250.0
 compress_knee_db = 8.0
 compress_makeup_db = 1.0
 
+[background]
+# Background replacement using RVM (Robust Video Matting).
+# Disabled by default — enable per-job or globally.
+enabled = false
+background_type = "blur"       # "blur", "solid", "image"
+background_image = ""          # path to image when type = "image"
+blur_strength = 21             # boxblur radius (odd number, higher = more blur)
+solid_color = "#1a1a2e"        # hex color when type = "solid"
+downsample_ratio = 0.25        # RVM internal res (0.25 = fast, 0.5 = better edges)
+model = "rvm"                  # "rvm" (future: "matanyone")
+
 [encoding]
 codec = "libx264"
 crf = 20

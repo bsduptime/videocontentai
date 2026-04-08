@@ -1,18 +1,12 @@
 {
   "pipeline": "founder-personal-portrait",
-  "branding": {
-    "intro_16x9": "",
-    "intro_9x16": "",
-    "outro_16x9": "",
-    "outro_9x16": "",
-    "watermark": ""
-  },
   "source": {
     "brand": "founder",
     "format": "talking-head, iPhone vertical, single take",
     "aspect_ratio": "9:16",
     "duration_range": [120, 180],
-    "tone": "Opinionated, raw, personal. Not a tutorial — a person sharing what they think, built, or learned."
+    "tone": "Opinionated, raw, personal. Not a tutorial — a person sharing what they think, built, or learned.",
+    "audio_profile": "iphone"
   },
   "cuts": [
     {

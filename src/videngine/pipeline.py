@@ -8,9 +8,11 @@ from pathlib import Path
 
 from rich.console import Console
 
+from .brand import apply_manifest_overrides, brand_to_branding, load_brand, load_manifest
 from .config import Config
 from .ffmpeg.probe import probe
 from .models import (
+    BrandConfig,
     Branding,
     CutPlan,
     CutSpec,
@@ -79,6 +81,7 @@ class Pipeline:
         config: Config,
         project: str = "",
         specs_file: str | None = None,
+        manifest_dir: str | None = None,
         no_voice: bool = False,
         no_thumbnail: bool = False,
         review: bool = False,
@@ -105,17 +108,63 @@ class Pipeline:
                 self.spec_file = detect_spec_file(self.source_file)
             self.job = self._create_job()
 
+        # Load brand: manifest → brand loader → legacy cut spec fallback
+        self._manifest = load_manifest(manifest_dir) if manifest_dir else None
+        self._brand_config = self._load_brand_config()
+
     @property
     def cut_specs(self) -> list[CutSpec]:
         return self.spec_file.cuts
 
     @property
     def source_context(self) -> SourceContext:
-        return self.spec_file.source
+        ctx = self.spec_file.source
+        # Apply audio profile from manifest if present
+        if self._manifest and self._manifest.audio_profile:
+            ctx = ctx.model_copy(update={"audio_profile": self._manifest.audio_profile})
+        return ctx
 
     @property
     def branding(self) -> Branding:
-        return self.spec_file.branding
+        """Branding for stages — converted from BrandConfig."""
+        return brand_to_branding(self._brand_config)
+
+    @property
+    def brand(self) -> BrandConfig:
+        return self._brand_config
+
+    def _load_brand_config(self) -> BrandConfig:
+        """Load brand config from manifest or cut spec source.brand.
+
+        Brand is required — pipeline fails if no brand can be loaded.
+        """
+        brand_name = ""
+        source = ""
+
+        # Manifest takes priority
+        if self._manifest and self._manifest.brand:
+            brand_name = self._manifest.brand
+            source = "manifest"
+        else:
+            brand_name = self.spec_file.source.brand
+            source = "cut spec"
+
+        if not brand_name:
+            raise ValueError(
+                "No brand specified. Set 'brand' in manifest.json or source.brand in the cut spec."
+            )
+
+        brand = load_brand(brand_name)
+        if not brand:
+            raise FileNotFoundError(
+                f"Brand '{brand_name}' not found. " f"Create assets/brands/{brand_name}/brand.json"
+            )
+
+        if self._manifest:
+            brand = apply_manifest_overrides(brand, self._manifest)
+
+        console.print(f"  [dim]Brand: {brand.display_name or brand.name} (from {source})[/dim]")
+        return brand
 
     def _create_job(self) -> JobState:
         job_id = f"{self.project or 'job'}-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
@@ -152,6 +201,12 @@ class Pipeline:
 
             self._run_stage("cut", self._stage_cut)
             self._run_stage("watermark", self._stage_watermark)
+
+            if self.config.background.enabled:
+                self._run_stage("background", self._stage_background)
+            else:
+                self._skip_stage("background")
+
             self._run_stage("intro_outro", self._stage_intro_outro)
             self._run_stage("hook_prepend", self._stage_hook_prepend)
 
@@ -231,7 +286,12 @@ class Pipeline:
     def _stage_transcribe(self) -> None:
         from .stages.transcribe import run_transcribe, run_visual_analysis
 
-        run_transcribe(self.job.source_file, self.job.working_dir, self.config)
+        run_transcribe(
+            self.job.source_file,
+            self.job.working_dir,
+            self.config,
+            audio_profile=self.source_context.audio_profile,
+        )
 
         # Adaptive frame interval based on source format
         frame_interval, dedup_window = self._get_frame_sampling_params()
@@ -242,11 +302,16 @@ class Pipeline:
             dedup_window=dedup_window,
             frame_interval=frame_interval,
         )
-        self.job.stages["transcribe"].artifacts = {
+        artifacts = {
             "transcript": "transcript.json",
             "audio": "audio.wav",
             "visual_context": "visual_context.json",
         }
+        # Track clean source if denoise produced one
+        clean_source = Path(self.job.working_dir) / "source_clean.mp4"
+        if clean_source.exists():
+            artifacts["source_clean"] = "source_clean.mp4"
+        self.job.stages["transcribe"].artifacts = artifacts
 
     def _stage_analyze(self) -> None:
         from .stages.analyze import run_analyze
@@ -270,9 +335,11 @@ class Pipeline:
         from .stages.cut import run_cut
 
         cut_plans = self._load_cut_plans()
+        # Use clean source (denoised audio) if stage 1 produced one
+        source = self._get_clean_source()
         clip_paths = run_cut(
             cut_plans,
-            self.job.source_file,
+            source,
             self.job.working_dir,
             self.config,
             cut_specs=self.cut_specs,
@@ -295,10 +362,28 @@ class Pipeline:
             name: f"clips/{name}/watermarked.mp4" for name in watermarked
         }
 
+    def _stage_background(self) -> None:
+        from .stages.background import run_background
+
+        clip_paths = self._get_clip_paths("watermark", "watermarked.mp4")
+        result = run_background(
+            clip_paths,
+            self.job.working_dir,
+            self.config,
+        )
+        self.job.stages["background"].artifacts = {
+            name: f"clips/{name}/bg_replaced.mp4" for name in result
+        }
+
     def _stage_intro_outro(self) -> None:
         from .stages.intro_outro import run_intro_outro
 
-        clip_paths = self._get_clip_paths("watermark", "watermarked.mp4")
+        # Read from background stage if it ran, otherwise from watermark
+        bg_stage = self.job.stages.get("background", StageResult())
+        if bg_stage.status == StageStatus.COMPLETED and bg_stage.artifacts:
+            clip_paths = self._get_clip_paths("background", "bg_replaced.mp4")
+        else:
+            clip_paths = self._get_clip_paths("watermark", "watermarked.mp4")
         cut_plans = self._load_cut_plans()
         result = run_intro_outro(
             clip_paths,
@@ -376,6 +461,13 @@ class Pipeline:
             if plan_path.exists():
                 plans.append(CutPlan.model_validate_json(plan_path.read_text()))
         return plans
+
+    def _get_clean_source(self) -> str:
+        """Return path to denoised source video, falling back to original."""
+        clean = Path(self.job.working_dir) / "source_clean.mp4"
+        if clean.exists():
+            return str(clean)
+        return self.job.source_file
 
     def _get_clip_paths(self, stage_name: str, filename: str) -> dict[str, str]:
         """Build clip paths from a stage's artifacts."""

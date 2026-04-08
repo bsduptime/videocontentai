@@ -30,6 +30,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 # Platform output dimensions
 YOUTUBE_SIZE = (1280, 720)  # 16:9
 SHORTS_SIZE = (1080, 1920)  # 9:16
+INSTAGRAM_SIZE = (1080, 1920)  # 9:16 (uploaded), designed for 1:1 center crop on grid
+INSTAGRAM_GRID = (1080, 1080)  # 1:1 — the actual visible area on profile grid
 LINKEDIN_SIZE = (1200, 627)  # ~1.91:1
 
 # Safe zone margins (fraction of canvas)
@@ -609,11 +611,17 @@ def _render_variants(
     composed_youtube.save(yt_path, "PNG")
     variants["youtube"] = yt_path
 
-    # Shorts (9:16) — re-compose vertically
-    shorts = _compose_vertical(base, concept, template, logo, SHORTS_SIZE)
-    shorts_path = output_dir / "thumbnail_shorts.png"
-    shorts.save(shorts_path, "PNG")
-    variants["shorts"] = shorts_path
+    # Instagram Reel cover (9:16) — designed center-out for 1:1 grid crop
+    ig_cover = _compose_instagram_cover(base, concept, template, logo)
+    ig_path = output_dir / "thumbnail_instagram.jpg"
+    ig_cover.save(ig_path, "JPEG", quality=95)
+    variants["instagram"] = ig_path
+
+    # Instagram grid preview (1:1 center crop) — what people actually see on your profile
+    grid_preview = _crop_center_square(ig_cover)
+    grid_path = output_dir / "thumbnail_instagram_grid.jpg"
+    grid_preview.save(grid_path, "JPEG", quality=95)
+    variants["instagram_grid"] = grid_path
 
     # LinkedIn (~1.91:1) — crop/resize from YouTube
     li = composed_youtube.resize(LINKEDIN_SIZE, Image.LANCZOS)
@@ -624,69 +632,130 @@ def _render_variants(
     return variants
 
 
-def _compose_vertical(
+def _compose_instagram_cover(
     base: Image.Image,
     concept: ThumbnailConcept,
     template: ThumbnailTemplate,
     logo: Image.Image | None,
-    size: tuple[int, int],
 ) -> Image.Image:
-    """Compose a vertical (9:16) thumbnail variant.
+    """Compose an Instagram Reel cover (1080x1920), designed center-out.
 
-    Layout: text in upper third, face/scene in lower two-thirds.
+    Brand-forward design: bold text hook on brand color background with a
+    dimmed video frame as subtle texture. No face — the Reel itself shows you.
+    All critical content sits inside the center 1080x1080 square (grid crop).
+
+    Instagram UI safe zones:
+      - Top 250px: status bar + navigation
+      - Bottom 440px: caption, username, audio bar
+      - Right 120px: like/comment/share buttons
     """
-    w, h = size
+    w, h = INSTAGRAM_SIZE  # 1080x1920
+    sq = INSTAGRAM_GRID[0]  # 1080 — the center square
+    band = (h - sq) // 2  # 420px top and bottom
+
+    primary = _hex_to_rgb(template.primary_color)
+    accent = _hex_to_rgb(concept.accent_color)
+    dark = tuple(max(0, c - 80) for c in primary)
+
     img = Image.new("RGB", (w, h))
     draw = ImageDraw.Draw(img)
 
-    # Gradient background
-    primary = _hex_to_rgb(template.primary_color)
-    dark = tuple(max(0, c - 60) for c in primary)
+    # Step 1: Brand gradient background (full canvas)
     for y in range(h):
         ratio = y / h
-        r = int(primary[0] * (1 - ratio) + dark[0] * ratio)
-        g = int(primary[1] * (1 - ratio) + dark[1] * ratio)
-        b = int(primary[2] * (1 - ratio) + dark[2] * ratio)
+        r = int(dark[0] + (primary[0] - dark[0]) * ratio)
+        g = int(dark[1] + (primary[1] - dark[1]) * ratio)
+        b = int(dark[2] + (primary[2] - dark[2]) * ratio)
         draw.line([(0, y), (w, y)], fill=(r, g, b))
 
-    # Paste cropped base image in lower portion
-    # Center-crop the base to fill width, place in bottom 60%
-    base_aspect = base.width / base.height
-    fill_w = w
-    fill_h = int(fill_w / base_aspect)
-    if fill_h < int(h * 0.6):
-        fill_h = int(h * 0.6)
-        fill_w = int(fill_h * base_aspect)
-    resized = base.resize((fill_w, fill_h), Image.LANCZOS)
+    # Step 2: Dimmed video frame as subtle background texture in center square
+    ig_config = template.instagram
+    base_sq = _crop_to_square(base).resize((sq, sq), Image.LANCZOS)
+    from PIL import ImageEnhance
 
-    # Center-crop to canvas width
-    crop_x = (fill_w - w) // 2
-    cropped = resized.crop((crop_x, 0, crop_x + w, fill_h))
-    paste_y = h - min(fill_h, h)
-    img.paste(cropped, (0, paste_y))
+    base_dimmed = ImageEnhance.Brightness(base_sq).enhance(ig_config.background_frame_brightness)
+    base_dimmed = ImageEnhance.Color(base_dimmed).enhance(0.3)
+    bg_region = img.crop((0, band, w, band + sq))
+    blended = Image.blend(bg_region, base_dimmed, ig_config.background_frame_opacity)
+    img.paste(blended, (0, band))
 
-    # Render text in upper area (within safe zone)
-    font = _load_font(template.font_impact, w, concept.hook_text)
-    margin_x = int(w * _SAFE_MARGIN)
-    margin_y = int(h * 0.22)  # ~22% from top (below platform UI chrome)
-
-    text = concept.hook_text.upper()
-    stroke_width = max(3, int(font.size * 0.06))
+    # Step 3: Accent color strip — visual anchor at center of the square
     draw = ImageDraw.Draw(img)
-    draw.text(
-        (margin_x, margin_y),
-        text,
-        font=font,
-        fill=(255, 255, 255),
-        stroke_width=stroke_width,
-        stroke_fill=(0, 0, 0),
-    )
+    if ig_config.show_accent_strip:
+        strip_h = 6
+        strip_y = band + sq // 2 - strip_h // 2
+        draw.rectangle([(0, strip_y), (w, strip_y + strip_h)], fill=accent)
 
-    # Logo in upper-left
+    # Step 4: Hook text — centered in center square, above the accent strip
+    # Avoid right 120px (IG buttons)
+    text_safe_w = w - 120 - 80  # 80px left, 120px right
+    ig_font_scale = ig_config.font_scale * template.font_scale
+    font = _load_font(template.font_impact, text_safe_w, concept.hook_text, ig_font_scale)
+    text = concept.hook_text.upper()
+    stroke_w = max(4, int(font.size * 0.08))
+
+    # Measure total text height to center vertically above the accent strip
+    lines = text.split("\n")
+    line_heights = []
+    for line in lines:
+        bbox = font.getbbox(line)
+        line_heights.append(bbox[3] - bbox[1])
+    line_gap = int(sq * 0.015)
+    total_text_h = sum(line_heights) + line_gap * (len(lines) - 1)
+
+    # Place text block centered vertically in upper half of center square
+    upper_half_center = band + sq * 0.35
+    text_start_y = int(upper_half_center - total_text_h / 2)
+    margin_x = 80
+
+    line_y = text_start_y
+    for line in lines:
+        # Center each line horizontally within the safe area
+        bbox = font.getbbox(line)
+        line_w = bbox[2] - bbox[0]
+        x = margin_x + (text_safe_w - line_w) // 2
+
+        draw.text(
+            (x, line_y),
+            line,
+            font=font,
+            fill=(255, 255, 255),
+            stroke_width=stroke_w,
+            stroke_fill=(0, 0, 0),
+        )
+        line_y += bbox[3] - bbox[1] + line_gap
+
+    # Step 5: Logo — bottom of center square, centered
     if logo:
-        img = _apply_branding(img, logo, template)
+        logo_h = int(sq * 0.06)
+        aspect = logo.width / logo.height
+        logo_w = int(logo_h * aspect)
+        logo_resized = logo.resize((logo_w, logo_h), Image.LANCZOS)
+        logo_x = (w - logo_w) // 2
+        logo_y = band + sq - logo_h - int(sq * 0.08)
+        if logo_resized.mode == "RGBA":
+            img.paste(logo_resized, (logo_x, logo_y), logo_resized)
+        else:
+            img.paste(logo_resized, (logo_x, logo_y))
 
     return img
+
+
+def _crop_to_square(img: Image.Image) -> Image.Image:
+    """Center-crop an image to a 1:1 square."""
+    w, h = img.size
+    side = min(w, h)
+    left = (w - side) // 2
+    top = (h - side) // 2
+    return img.crop((left, top, left + side, top + side))
+
+
+def _crop_center_square(img: Image.Image) -> Image.Image:
+    """Extract the center 1080x1080 square from a 1080x1920 Instagram cover."""
+    w, h = img.size
+    sq = min(w, h)
+    top = (h - sq) // 2
+    return img.crop((0, top, sq, top + sq)).resize(INSTAGRAM_GRID, Image.LANCZOS)
 
 
 # --- Helpers ---

@@ -274,6 +274,93 @@ def mix_background_music(
     ]
 
 
+def composite_with_matte(
+    input_path: str,
+    matte_path: str,
+    bg_source: str,
+    output_path: str,
+    encoding: EncodingConfig,
+    bg_type: str = "blur",
+    solid_color: str = "#00FF00",
+) -> list[str]:
+    """Composite foreground onto a new background using an alpha matte video.
+
+    Inputs:
+      - input_path: original video (foreground + audio)
+      - matte_path: grayscale alpha matte video (white = keep, black = replace)
+      - bg_source: background video/image path (unused for solid color)
+      - bg_type: "blur" (bg_source is blurred video), "image", or "solid"
+      - solid_color: hex color for solid background
+
+    The matte is used to blend: output = fg * alpha + bg * (1 - alpha).
+    Audio is copied from the original.
+    """
+    if bg_type == "solid":
+        # Generate solid color background using color source
+        filter_complex = (
+            f"color=c={solid_color}:s=1920x1080:r=30[bg];"
+            f"[1:v]format=gray[matte];"
+            f"[0:v][matte]alphamerge[fg];"
+            f"[bg][fg]overlay=0:0:shortest=1[out]"
+        )
+        return [
+            "ffmpeg",
+            "-y",
+            "-i",
+            input_path,
+            "-i",
+            matte_path,
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[out]",
+            "-map",
+            "0:a",
+            *_video_encode_args(encoding),
+            "-c:a",
+            "copy",
+            output_path,
+        ]
+
+    # blur or image — bg_source is a file
+    if bg_type == "image":
+        # Static image: loop it to match video length, scale to match
+        filter_complex = (
+            "[1:v]scale=iw:ih,format=rgb24,loop=-1:size=1:start=0,"
+            "setpts=N/FRAME_RATE/TB,scale=iw:ih[bg];"
+            "[2:v]format=gray[matte];"
+            "[0:v][matte]alphamerge[fg];"
+            "[bg][fg]overlay=0:0:shortest=1[out]"
+        )
+    else:
+        # Video background (blur, etc.)
+        filter_complex = (
+            "[2:v]format=gray[matte];"
+            "[0:v][matte]alphamerge[fg];"
+            "[1:v][fg]overlay=0:0:shortest=1[out]"
+        )
+    return [
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,  # 0: original (foreground + audio)
+        "-i",
+        bg_source,  # 1: background (image or video)
+        "-i",
+        matte_path,  # 2: alpha matte
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        "[out]",
+        "-map",
+        "0:a",
+        *_video_encode_args(encoding),
+        "-c:a",
+        "copy",
+        output_path,
+    ]
+
+
 def apply_watermark(
     input_path: str,
     watermark_path: str,

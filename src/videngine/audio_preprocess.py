@@ -132,33 +132,55 @@ def replace_audio_track(
     video_path: str,
     audio_wav: str,
     output_path: str,
+    compress: bool = False,
+    threshold_db: float = -20.0,
+    ratio: float = 3.0,
+    attack_ms: float = 5.0,
+    release_ms: float = 200.0,
+    knee_db: float = 6.0,
+    makeup_db: float = 2.0,
 ) -> None:
-    """Replace a video's audio track with a WAV file. Video stream-copied."""
-    result = subprocess.run(
-        [
-            "ffmpeg",
-            "-y",
-            "-i",
-            video_path,
-            "-i",
-            audio_wav,
-            "-map",
-            "0:v",
-            "-map",
-            "1:a",
-            "-c:v",
-            "copy",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
-            "-ac",
-            "2",
-            output_path,
-        ],
-        capture_output=True,
-        text=True,
-    )
+    """Replace a video's audio track with a WAV file. Video stream-copied.
+
+    If compress=True, applies dynamic compression in the same encode pass.
+    """
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        video_path,
+        "-i",
+        audio_wav,
+        "-map",
+        "0:v",
+        "-map",
+        "1:a",
+        "-c:v",
+        "copy",
+    ]
+
+    if compress:
+        af = (
+            f"acompressor=threshold={threshold_db}dB"
+            f":ratio={ratio}"
+            f":attack={attack_ms}"
+            f":release={release_ms}"
+            f":knee={knee_db}"
+            f":makeup={makeup_db}dB"
+        )
+        cmd += ["-af", af]
+
+    cmd += [
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
+        "-ac",
+        "2",
+        output_path,
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(f"Audio replace failed:\n{result.stderr[-500:]}")
 

@@ -1,4 +1,4 @@
-"""Stage 1: Audio extraction + whisper-cli transcription + visual analysis."""
+"""Stage 1: Audio extraction + denoise + whisper-cli transcription + visual analysis."""
 
 from __future__ import annotations
 
@@ -8,30 +8,64 @@ import re
 import subprocess
 from pathlib import Path
 
+from ..audio_preprocess import denoise_audio, extract_audio_48k, replace_audio_track
 from ..config import Config
-from ..ffmpeg.commands import detect_scenes, extract_audio
+from ..ffmpeg.commands import detect_scenes
 from ..ffmpeg.probe import probe
 from ..models import SceneChange, Transcript, TranscriptSegment, VisualContext, VisualSegment, Word
 
 logger = logging.getLogger(__name__)
 
 
-def run_transcribe(source_file: str, working_dir: str, config: Config) -> Transcript:
-    """Extract audio from video and run whisper-cli for transcription."""
+def run_transcribe(
+    source_file: str,
+    working_dir: str,
+    config: Config,
+    audio_profile: str = "macbook",
+) -> Transcript:
+    """Extract audio, denoise, compress, transcribe, and create clean source video.
+
+    Flow:
+      1. Extract audio at 48kHz (for DeepFilterNet)
+      2. Denoise the full audio via DeepFilterNet3
+      3. Downsample denoised audio to 16kHz for Whisper
+      4. Run Whisper on clean audio
+      5. Create clean source video (original video + denoised + compressed audio)
+
+    The clean source is saved as 'source_clean.mp4' in working_dir and used
+    by all subsequent stages. Audio profile (macbook/iphone) controls compression
+    settings — it's a property of the recording device, applied once to the full source.
+    """
     work = Path(working_dir)
-    audio_path = work / "audio.wav"
     transcript_path = work / "transcript.json"
 
-    # Step 1: Extract audio
-    cmd = extract_audio(source_file, str(audio_path))
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"Audio extraction failed:\n{result.stderr[-500:]}")
+    # Step 1: Extract audio at 48kHz (single extraction for both denoise + transcription)
+    audio_48k_path = work / "audio_48k.wav"
+    logger.info("Extracting audio at 48kHz...")
+    extract_audio_48k(source_file, str(audio_48k_path))
 
-    # Step 2: Get source duration
+    # Step 2: Denoise full audio via DeepFilterNet3
+    audio_denoised_path = work / "audio_denoised_48k.wav"
+    if config.audio.denoise:
+        logger.info("Denoising full audio via DeepFilterNet3...")
+        try:
+            denoise_audio(str(audio_48k_path), str(audio_denoised_path))
+            logger.info("Audio denoised successfully")
+            clean_audio = audio_denoised_path
+        except Exception as e:
+            logger.warning("Denoise failed, using raw audio: %s", e)
+            clean_audio = audio_48k_path
+    else:
+        clean_audio = audio_48k_path
+
+    # Step 3: Downsample to 16kHz mono for Whisper
+    audio_16k_path = work / "audio.wav"
+    _downsample_16k(str(clean_audio), str(audio_16k_path))
+
+    # Step 4: Get source duration
     info = probe(source_file)
 
-    # Step 3: Run whisper-cli
+    # Step 5: Run whisper-cli on clean audio
     whisper_cmd = [
         "whisper-cli",
         "-m",
@@ -44,24 +78,65 @@ def run_transcribe(source_file: str, working_dir: str, config: Config) -> Transc
         "-of",
         str(work / "whisper_out"),
         "-f",
-        str(audio_path),
+        str(audio_16k_path),
     ]
     result = subprocess.run(whisper_cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(f"Whisper transcription failed:\n{result.stderr[-500:]}")
 
-    # Step 4: Parse whisper output
+    # Step 6: Parse whisper output
     whisper_json_path = work / "whisper_out.json"
     if not whisper_json_path.exists():
         raise FileNotFoundError(f"Whisper output not found at {whisper_json_path}")
 
     raw = json.loads(whisper_json_path.read_text())
     transcript = _parse_whisper_output(raw, source_file, info.duration)
-
-    # Save parsed transcript
     transcript_path.write_text(transcript.model_dump_json(indent=2))
 
+    # Step 7: Create clean source video (denoised + compressed audio)
+    profile = config.audio.get_profile(audio_profile)
+    clean_source_path = work / "source_clean.mp4"
+    logger.info(
+        "Creating clean source video (denoise=%s, compress, profile=%s)...",
+        clean_audio != audio_48k_path,
+        audio_profile,
+    )
+    replace_audio_track(
+        source_file,
+        str(clean_audio),
+        str(clean_source_path),
+        compress=True,
+        threshold_db=profile.compress_threshold_db,
+        ratio=profile.compress_ratio,
+        attack_ms=profile.compress_attack_ms,
+        release_ms=profile.compress_release_ms,
+        knee_db=profile.compress_knee_db,
+        makeup_db=profile.compress_makeup_db,
+    )
+    logger.info("Clean source saved: %s", clean_source_path)
+
     return transcript
+
+
+def _downsample_16k(input_wav: str, output_wav: str) -> None:
+    """Downsample a WAV file to 16kHz mono for Whisper."""
+    result = subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            input_wav,
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            output_wav,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Downsample failed:\n{result.stderr[-500:]}")
 
 
 def _parse_whisper_output(raw: dict, source_file: str, duration: float) -> Transcript:

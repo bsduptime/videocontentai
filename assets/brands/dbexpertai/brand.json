@@ -1,0 +1,56 @@
+{
+  "name": "dbexpertai",
+  "display_name": "DB Expert AI",
+
+  "colors": {
+    "primary": "#336791",
+    "accent": "#F5A623",
+    "background_dark": "#1a2332",
+    "background_light": "#f5f5f5",
+    "text_primary": "#ffffff",
+    "text_secondary": "#cccccc"
+  },
+
+  "fonts": {
+    "heading": "Montserrat-Bold.ttf",
+    "body": "BebasNeue-Regular.ttf"
+  },
+
+  "thumbnail": {
+    "youtube": {
+      "text_style": "line1_white_line2_red",
+      "font_scale": 1.2,
+      "text_position": "upper_left",
+      "use_face": true,
+      "face_position": "right",
+      "face_scale": 0.85
+    },
+    "instagram": {
+      "text_style": "centered_bold",
+      "font_scale": 1.0,
+      "use_face": false,
+      "show_accent_strip": true,
+      "background_frame_opacity": 0.5,
+      "background_frame_brightness": 0.25
+    }
+  },
+
+  "person": {
+    "description": "athletic man with blue eyes, wearing a plain black crew neck t-shirt with short sleeves, no jewelry no accessories no necklace",
+    "face_reference": "dbexpertai.png",
+    "expression_default": "determined intense expression looking slightly to the left"
+  },
+
+  "watermark": {
+    "file": "dbexpertai-watermark.png",
+    "position_16x9": { "scale": 0.40, "opacity": 0.9, "x": "W-w-65", "y": "H-h-40" },
+    "position_9x16": { "scale": 0.40, "opacity": 0.9, "x": "W-w-40", "y": "H-h-65" }
+  },
+
+  "templates": {
+    "intro_16x9": "dbexpert-intro-16x9.mp4",
+    "intro_9x16": "dbexpert-intro-9x16.mp4",
+    "outro_16x9": "dbexpert-outro-16x9.mp4",
+    "outro_9x16": "dbexpert-outro-9x16.mp4"
+  }
+}

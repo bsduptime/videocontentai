@@ -92,6 +92,7 @@ class SourceContext(BaseModel):
     aspect_ratio: str = ""  # "16:9", "9:16"
     duration_range: list[float] = Field(default_factory=list)  # [min, max] expected source length
     tone: str = ""  # editorial tone guidance for the AI
+    audio_profile: str = "macbook"  # recording device profile ("macbook", "iphone")
 
 
 class CutSpec(BaseModel):
@@ -140,6 +141,20 @@ class WatermarkPosition(BaseModel):
     y: str = "H-h-40"  # ffmpeg overlay y expression
 
 
+class PlatformThumbnailConfig(BaseModel):
+    """Per-platform thumbnail rendering overrides."""
+
+    text_style: str = ""  # "plain", "line1_white_line2_red", "centered_bold"
+    font_scale: float = 1.0
+    text_position: str = "upper_left"  # "upper_left", "upper_right", "center"
+    use_face: bool = True
+    face_position: str = "right"
+    face_scale: float = 0.85
+    show_accent_strip: bool = False
+    background_frame_opacity: float = 0.5  # blend ratio of dimmed frame
+    background_frame_brightness: float = 0.25  # how much to dim the frame
+
+
 class ThumbnailTemplate(BaseModel):
     """Per-brand thumbnail rendering config — colors, fonts, person description."""
 
@@ -151,6 +166,15 @@ class ThumbnailTemplate(BaseModel):
     logo_scale: float = 0.08
     person_description: str = ""  # physical appearance for Flux prompts
     text_style: str = "line1_white_line2_red"  # "plain" or "line1_white_line2_red"
+    # Per-platform overrides (loaded from brand.json)
+    youtube: PlatformThumbnailConfig = Field(default_factory=PlatformThumbnailConfig)
+    instagram: PlatformThumbnailConfig = Field(
+        default_factory=lambda: PlatformThumbnailConfig(
+            text_style="centered_bold",
+            use_face=False,
+            show_accent_strip=True,
+        )
+    )
 
 
 class Branding(BaseModel):
@@ -166,11 +190,73 @@ class Branding(BaseModel):
     thumbnail: ThumbnailTemplate = Field(default_factory=ThumbnailTemplate)
 
 
+class Manifest(BaseModel):
+    """Input contract — ties a recording to a brand and provides per-job config.
+
+    Lives at video-content/input/{slug}/manifest.json (today) or will be
+    passed directly when the content repo integrates.
+    """
+
+    brand: str = ""  # brand name → loads from assets/brands/{brand}/brand.json
+    slug: str = ""
+    language: str = "en"
+    audio_profile: str = "macbook"  # recording device: "macbook", "iphone"
+    # Per-job overrides (optional — brand.json provides defaults)
+    primary_color: str = ""  # override brand color for this job
+    accent_color: str = ""
+    person_description: str = ""  # override face/appearance description
+
+
+class BrandConfig(BaseModel):
+    """Full brand configuration — loaded from assets/brands/{name}/brand.json.
+
+    This is the single source of truth for brand visuals. Cut specs define
+    editorial format; BrandConfig defines how it looks.
+    """
+
+    name: str = ""
+    display_name: str = ""
+
+    # Colors
+    primary_color: str = "#336791"
+    accent_color: str = "#F5A623"
+    background_dark: str = "#1a2332"
+    background_light: str = "#f5f5f5"
+    text_primary: str = "#ffffff"
+    text_secondary: str = "#cccccc"
+
+    # Fonts (filenames — resolved from brand dir or assets/fonts/)
+    font_heading: str = "Montserrat-Bold.ttf"
+    font_body: str = "BebasNeue-Regular.ttf"
+
+    # Person / face
+    person_description: str = ""
+    face_reference: str = ""  # filename in assets/faces/
+    expression_default: str = ""
+
+    # Watermark
+    watermark_file: str = ""
+    watermark_16x9: WatermarkPosition = Field(default_factory=WatermarkPosition)
+    watermark_9x16: WatermarkPosition = Field(default_factory=WatermarkPosition)
+
+    # Intro/outro templates
+    intro_16x9: str = ""
+    intro_9x16: str = ""
+    outro_16x9: str = ""
+    outro_9x16: str = ""
+
+    # Thumbnail config per platform
+    thumbnail: ThumbnailTemplate = Field(default_factory=ThumbnailTemplate)
+
+
 class CutSpecFile(BaseModel):
-    """Top-level structure of a cut spec JSON file."""
+    """Top-level structure of a cut spec JSON file.
+
+    Defines editorial format only. Brand visuals come from BrandConfig
+    (loaded via brand.py from assets/brands/{source.brand}/brand.json).
+    """
 
     pipeline: str = ""  # "dbexpertai-brand-portrait", "founder-personal-landscape"
-    branding: Branding = Field(default_factory=Branding)
     source: SourceContext = Field(default_factory=SourceContext)
     cuts: list[CutSpec] = Field(default_factory=list)
 
@@ -289,6 +375,7 @@ STAGE_NAMES = [
     "analyze",
     "cut",
     "watermark",
+    "background",
     "intro_outro",
     "hook_prepend",
     "thumbnail",

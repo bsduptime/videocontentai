@@ -1,0 +1,56 @@
+{
+  "name": "founder",
+  "display_name": "Founder",
+
+  "colors": {
+    "primary": "#2d2d2d",
+    "accent": "#e74c3c",
+    "background_dark": "#1a1a1a",
+    "background_light": "#fafafa",
+    "text_primary": "#ffffff",
+    "text_secondary": "#aaaaaa"
+  },
+
+  "fonts": {
+    "heading": "Montserrat-Bold.ttf",
+    "body": "BebasNeue-Regular.ttf"
+  },
+
+  "thumbnail": {
+    "youtube": {
+      "text_style": "plain",
+      "font_scale": 1.1,
+      "text_position": "upper_left",
+      "use_face": true,
+      "face_position": "right",
+      "face_scale": 0.85
+    },
+    "instagram": {
+      "text_style": "centered_bold",
+      "font_scale": 1.0,
+      "use_face": false,
+      "show_accent_strip": true,
+      "background_frame_opacity": 0.5,
+      "background_frame_brightness": 0.25
+    }
+  },
+
+  "person": {
+    "description": "",
+    "face_reference": "founder.png",
+    "expression_default": ""
+  },
+
+  "watermark": {
+    "file": "",
+    "position_16x9": { "scale": 0.40, "opacity": 0.9, "x": "W-w-65", "y": "H-h-40" },
+    "position_9x16": { "scale": 0.40, "opacity": 0.9, "x": "W-w-40", "y": "H-h-65" }
+  },
+
+  "templates": {
+    "intro_16x9": "",
+    "intro_9x16": "",
+    "outro_16x9": "",
+    "outro_9x16": ""
+  }
+}
