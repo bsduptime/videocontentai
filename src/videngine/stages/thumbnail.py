@@ -102,7 +102,7 @@ def run_thumbnail(
             composed = _apply_branding(composed, logo, template)
 
         # 4. Render platform variants
-        variants = _render_variants(composed, base, concept, template, logo, spec_dir)
+        variants = _render_variants(composed, base, concept, template, logo, spec_dir, config)
         outputs[plan.spec_name] = str(variants["youtube"])
 
     return outputs
@@ -175,8 +175,16 @@ def _generate_comfyui_image(
     return _comfyui_submit_and_poll(url, workflow)
 
 
-def _build_flux_workflow(concept: ThumbnailConcept) -> dict:
-    """Build a plain Flux Schnell workflow (background only, no face)."""
+def _build_flux_workflow(
+    concept: ThumbnailConcept,
+    width: int = YOUTUBE_SIZE[0],
+    height: int = YOUTUBE_SIZE[1],
+    prefix: str = "videngine_thumb",
+) -> dict:
+    """Build a plain Flux Schnell workflow (background only, no face).
+
+    Accepts custom dimensions for platform-specific generation (e.g. 1080x1920 for IG).
+    """
     return {
         "1": {
             "class_type": "UNETLoader",
@@ -197,7 +205,7 @@ def _build_flux_workflow(concept: ThumbnailConcept) -> dict:
         },
         "5": {
             "class_type": "EmptyLatentImage",
-            "inputs": {"width": YOUTUBE_SIZE[0], "height": YOUTUBE_SIZE[1], "batch_size": 1},
+            "inputs": {"width": width, "height": height, "batch_size": 1},
         },
         "6": {
             "class_type": "KSampler",
@@ -217,7 +225,7 @@ def _build_flux_workflow(concept: ThumbnailConcept) -> dict:
         "7": {"class_type": "VAEDecode", "inputs": {"samples": ["6", 0], "vae": ["3", 0]}},
         "save": {
             "class_type": "SaveImage",
-            "inputs": {"images": ["7", 0], "filename_prefix": "videngine_thumb"},
+            "inputs": {"images": ["7", 0], "filename_prefix": prefix},
         },
     }
 
@@ -602,6 +610,7 @@ def _render_variants(
     template: ThumbnailTemplate,
     logo: Image.Image | None,
     output_dir: Path,
+    config: Config | None = None,
 ) -> dict[str, Path]:
     """Render platform-specific thumbnail variants."""
     variants: dict[str, Path] = {}
@@ -611,8 +620,9 @@ def _render_variants(
     composed_youtube.save(yt_path, "PNG")
     variants["youtube"] = yt_path
 
-    # Instagram Reel cover (9:16) — designed center-out for 1:1 grid crop
-    ig_cover = _compose_instagram_cover(base, concept, template, logo)
+    # Instagram Reel cover (9:16) — native 9:16 Flux background, no branding
+    ig_base = _generate_instagram_base(concept, config)
+    ig_cover = _compose_instagram_cover(ig_base, concept, template)
     ig_path = output_dir / "thumbnail_instagram.jpg"
     ig_cover.save(ig_path, "JPEG", quality=95)
     variants["instagram"] = ig_path
@@ -632,89 +642,120 @@ def _render_variants(
     return variants
 
 
-def _compose_instagram_cover(
-    base: Image.Image,
+def _generate_instagram_base(
     concept: ThumbnailConcept,
-    template: ThumbnailTemplate,
-    logo: Image.Image | None,
+    config: Config | None = None,
 ) -> Image.Image:
-    """Compose an Instagram Reel cover (1080x1920), designed center-out.
+    """Generate a native 9:16 base image for Instagram covers.
 
-    Brand-forward design: bold text hook on brand color background with a
-    dimmed video frame as subtle texture. No face — the Reel itself shows you.
-    All critical content sits inside the center 1080x1080 square (grid crop).
-
-    Instagram UI safe zones:
-      - Top 250px: status bar + navigation
-      - Bottom 440px: caption, username, audio bar
-      - Right 120px: like/comment/share buttons
+    Tries local ComfyUI first, falls back to a Pillow gradient.
     """
-    w, h = INSTAGRAM_SIZE  # 1080x1920
-    sq = INSTAGRAM_GRID[0]  # 1080 — the center square
-    band = (h - sq) // 2  # 420px top and bottom
+    if config and not config.thumbnail.fallback_only:
+        url = config.thumbnail.comfyui_url
+        try:
+            resp = httpx.get(f"{url}/system_stats", timeout=5.0)
+            if resp.status_code == 200:
+                # Append vertical composition hint to the flux prompt
+                prompt = concept.flux_prompt + ", vertical composition"
+                ig_concept = concept.model_copy(update={"flux_prompt": prompt})
+                workflow = _build_flux_workflow(
+                    ig_concept,
+                    width=INSTAGRAM_SIZE[0],
+                    height=INSTAGRAM_SIZE[1],
+                    prefix="videngine_ig",
+                )
+                result = _comfyui_submit_and_poll(url, workflow)
+                if result is not None:
+                    logger.info("Generated native 9:16 Flux base for Instagram")
+                    return result
+        except Exception:
+            logger.debug("ComfyUI not available for Instagram base, using fallback")
 
-    primary = _hex_to_rgb(template.primary_color)
-    accent = _hex_to_rgb(concept.accent_color)
+    # Fallback: brand-colored gradient in 9:16
+    logger.info("Using Pillow gradient fallback for Instagram base")
+    primary = _hex_to_rgb(concept.accent_color)
     dark = tuple(max(0, c - 80) for c in primary)
-
+    w, h = INSTAGRAM_SIZE
     img = Image.new("RGB", (w, h))
     draw = ImageDraw.Draw(img)
-
-    # Step 1: Brand gradient background (full canvas)
     for y in range(h):
         ratio = y / h
         r = int(dark[0] + (primary[0] - dark[0]) * ratio)
         g = int(dark[1] + (primary[1] - dark[1]) * ratio)
         b = int(dark[2] + (primary[2] - dark[2]) * ratio)
         draw.line([(0, y), (w, y)], fill=(r, g, b))
+    return img
 
-    # Step 2: Dimmed video frame as subtle background texture in center square
-    ig_config = template.instagram
-    base_sq = _crop_to_square(base).resize((sq, sq), Image.LANCZOS)
+
+def _compose_instagram_cover(
+    base: Image.Image,
+    concept: ThumbnailConcept,
+    template: ThumbnailTemplate,
+) -> Image.Image:
+    """Compose an Instagram Reel cover (1080x1920) on a native 9:16 background.
+
+    Design: dimmed Flux background with large centered hook text.
+    No branding — logos belong in the video content, not on covers.
+    Text is centered in the middle 1080x1080 square so it reads well
+    in both the full Reel cover and the 1:1 profile grid crop.
+
+    Instagram UI safe zones:
+      - Top 250px: status bar + navigation
+      - Bottom 440px: caption, username, audio bar
+      - Right 120px: like/comment/share buttons
+    """
     from PIL import ImageEnhance
 
-    base_dimmed = ImageEnhance.Brightness(base_sq).enhance(ig_config.background_frame_brightness)
-    base_dimmed = ImageEnhance.Color(base_dimmed).enhance(0.3)
-    bg_region = img.crop((0, band, w, band + sq))
-    blended = Image.blend(bg_region, base_dimmed, ig_config.background_frame_opacity)
-    img.paste(blended, (0, band))
+    w, h = INSTAGRAM_SIZE  # 1080x1920
+    sq = INSTAGRAM_GRID[0]  # 1080 — the center square
+    band = (h - sq) // 2  # 420px top and bottom
 
-    # Step 3: Accent color strip — visual anchor at center of the square
+    ig_config = template.instagram
+
+    # Step 1: Dim the full 9:16 background for text readability
+    img = base.copy().resize((w, h), Image.LANCZOS)
+    img = ImageEnhance.Brightness(img).enhance(ig_config.background_frame_brightness)
+    img = ImageEnhance.Color(img).enhance(0.6)
+
     draw = ImageDraw.Draw(img)
-    if ig_config.show_accent_strip:
-        strip_h = 6
-        strip_y = band + sq // 2 - strip_h // 2
-        draw.rectangle([(0, strip_y), (w, strip_y + strip_h)], fill=accent)
 
-    # Step 4: Hook text — centered in center square, above the accent strip
-    # Avoid right 120px (IG buttons)
-    text_safe_w = w - 120 - 80  # 80px left, 120px right
-    ig_font_scale = ig_config.font_scale * template.font_scale
-    font = _load_font(template.font_impact, text_safe_w, concept.hook_text, ig_font_scale)
+    # Step 2: Hook text — large, centered in the center 1080x1080 square
+    # Research recommends 80-120px+ for headlines on 1080w at grid-tile scale
     text = concept.hook_text.upper()
-    stroke_w = max(4, int(font.size * 0.08))
-
-    # Measure total text height to center vertically above the accent strip
     lines = text.split("\n")
-    line_heights = []
-    for line in lines:
-        bbox = font.getbbox(line)
-        line_heights.append(bbox[3] - bbox[1])
-    line_gap = int(sq * 0.015)
-    total_text_h = sum(line_heights) + line_gap * (len(lines) - 1)
+    text_safe_w = w - 120 - 80  # 80px left, 120px right (IG button safe zone)
 
-    # Place text block centered vertically in upper half of center square
-    upper_half_center = band + sq * 0.35
-    text_start_y = int(upper_half_center - total_text_h / 2)
-    margin_x = 80
+    # Start large (160px) and shrink until text fits ~85% of safe width
+    font_path = str(_resolve_asset(template.font_impact))
+    target_w = int(text_safe_w * 0.85)
+    font_size = 160
+    try:
+        font = ImageFont.truetype(font_path, font_size)
+        for _ in range(20):
+            max_line_w = max(font.getbbox(line)[2] - font.getbbox(line)[0] for line in lines)
+            if max_line_w <= target_w:
+                break
+            font_size -= 4
+            font = ImageFont.truetype(font_path, font_size)
+        font_size = max(font_size, 80)  # never go below 80px
+        font = ImageFont.truetype(font_path, font_size)
+    except OSError:
+        logger.warning("Font %s not found, using default", font_path)
+        font = ImageFont.load_default()
+
+    stroke_w = max(5, int(font_size * 0.06))
+
+    # Measure and center text vertically in the center square
+    line_heights = [font.getbbox(line)[3] - font.getbbox(line)[1] for line in lines]
+    line_gap = int(font_size * 0.15)
+    total_text_h = sum(line_heights) + line_gap * (len(lines) - 1)
+    text_start_y = band + (sq - total_text_h) // 2
 
     line_y = text_start_y
-    for line in lines:
-        # Center each line horizontally within the safe area
+    for i, line in enumerate(lines):
         bbox = font.getbbox(line)
         line_w = bbox[2] - bbox[0]
-        x = margin_x + (text_safe_w - line_w) // 2
-
+        x = 80 + (text_safe_w - line_w) // 2
         draw.text(
             (x, line_y),
             line,
@@ -723,20 +764,9 @@ def _compose_instagram_cover(
             stroke_width=stroke_w,
             stroke_fill=(0, 0, 0),
         )
-        line_y += bbox[3] - bbox[1] + line_gap
+        line_y += line_heights[i] + line_gap
 
-    # Step 5: Logo — bottom of center square, centered
-    if logo:
-        logo_h = int(sq * 0.06)
-        aspect = logo.width / logo.height
-        logo_w = int(logo_h * aspect)
-        logo_resized = logo.resize((logo_w, logo_h), Image.LANCZOS)
-        logo_x = (w - logo_w) // 2
-        logo_y = band + sq - logo_h - int(sq * 0.08)
-        if logo_resized.mode == "RGBA":
-            img.paste(logo_resized, (logo_x, logo_y), logo_resized)
-        else:
-            img.paste(logo_resized, (logo_x, logo_y))
+    # No logo — branding lives in the video content (watermark, intro/outro)
 
     return img
 

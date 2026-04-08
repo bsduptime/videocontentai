@@ -29,9 +29,8 @@
       "text_style": "centered_bold",
       "font_scale": 1.0,
       "use_face": false,
-      "show_accent_strip": true,
-      "background_frame_opacity": 0.5,
-      "background_frame_brightness": 0.25
+      "show_logo": false,
+      "background_frame_brightness": 0.5
     }
   },
 

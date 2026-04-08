@@ -96,15 +96,15 @@ def _parse_brand_json(config_path: Path, brand_dir: Path) -> BrandConfig:
             text_style=ig_raw.get("text_style", "centered_bold"),
             font_scale=ig_raw.get("font_scale", 1.0),
             use_face=ig_raw.get("use_face", False),
-            show_accent_strip=ig_raw.get("show_accent_strip", True),
+            show_logo=ig_raw.get("show_logo", False),
             background_frame_opacity=ig_raw.get("background_frame_opacity", 0.5),
-            background_frame_brightness=ig_raw.get("background_frame_brightness", 0.25),
+            background_frame_brightness=ig_raw.get("background_frame_brightness", 0.5),
         )
         if ig_raw
         else PlatformThumbnailConfig(
             text_style="centered_bold",
             use_face=False,
-            show_accent_strip=True,
+            show_logo=False,
         ),
     )
 

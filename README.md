@@ -66,11 +66,11 @@ Generates platform-specific thumbnails per cut:
 | Output | Size | Format | Design |
 |--------|------|--------|--------|
 | `thumbnail_youtube.png` | 1280x720 | PNG | Face + hook text + branding (rule of thirds) |
-| `thumbnail_instagram.jpg` | 1080x1920 | JPEG 95% sRGB | Brand colors + centered text + dimmed frame (center-out for 1:1 grid crop) |
-| `thumbnail_instagram_grid.jpg` | 1080x1080 | JPEG 95% sRGB | Grid preview — what people see on profile |
+| `thumbnail_instagram.jpg` | 1080x1920 | JPEG 95% sRGB | Native 9:16 Flux background + centered hook text, no branding |
+| `thumbnail_instagram_grid.jpg` | 1080x1080 | JPEG 95% sRGB | Center crop of 9:16 — what people see on profile grid |
 | `thumbnail_linkedin.png` | 1200x627 | PNG | Resized from YouTube |
 
-Instagram covers are designed **center-out**: all critical content (text, logo) lives inside the center 1080x1080 square, which is what appears on the profile grid. The gradient background extends to fill 9:16 for the full Reel cover view.
+Instagram covers use a **native 9:16 Flux-generated background** — no gradient bars or composited landscape crops. Text is centered in the middle 1080x1080 square so it's visible in both the full Reel cover and the 1:1 grid preview. No logo/branding on covers — branding lives in the video content itself (watermark, intro/outro). Font size targets 80-120px+ for readability at grid-tile scale.
 
 ## Brand System
 
@@ -101,7 +101,7 @@ Example `brand.json`:
   },
   "thumbnail": {
     "youtube": { "text_style": "line1_white_line2_red", "use_face": true },
-    "instagram": { "text_style": "centered_bold", "use_face": false, "show_accent_strip": true }
+    "instagram": { "text_style": "centered_bold", "use_face": false, "show_accent_strip": false }
   },
   "watermark": { "file": "dbexpertai-watermark.png" },
   "templates": { "intro_9x16": "dbexpert-intro-9x16.mp4" }

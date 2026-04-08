@@ -150,9 +150,9 @@ class PlatformThumbnailConfig(BaseModel):
     use_face: bool = True
     face_position: str = "right"
     face_scale: float = 0.85
-    show_accent_strip: bool = False
+    show_logo: bool = True  # False for Instagram (branding in video, not covers)
     background_frame_opacity: float = 0.5  # blend ratio of dimmed frame
-    background_frame_brightness: float = 0.25  # how much to dim the frame
+    background_frame_brightness: float = 0.5  # how much to dim the frame
 
 
 class ThumbnailTemplate(BaseModel):
@@ -172,7 +172,8 @@ class ThumbnailTemplate(BaseModel):
         default_factory=lambda: PlatformThumbnailConfig(
             text_style="centered_bold",
             use_face=False,
-            show_accent_strip=True,
+            show_logo=False,
+            background_frame_brightness=0.5,
         )
     )
 
