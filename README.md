@@ -5,23 +5,151 @@ Automated video production pipeline. One long video in → multiple platform-rea
 ## Pipeline
 
 ```
-Raw Video → Transcribe → AI Edit Agent → Voice Clone → Assemble → Multi-Format Render
-                                                                        ↓
-                                                          16:9 / 9:16 / 4:5
+Source Video → Clean Source (denoise+compress) → Transcribe → AI Analysis
+    → Cut → Watermark → [Background Replace] → Intro/Outro → Hook → Thumbnail
+                                                                       ↓
+                                                    YouTube / Instagram / LinkedIn / Shorts
 ```
 
 | Stage | What it does | Tool |
 |-------|-------------|------|
 | **1. Transcribe** | Extract audio (48kHz), denoise, compress, transcribe, create clean source | DeepFilterNet3 + whisper.cpp (CUDA) |
 | **2. Analyze** | Score segments, plan cuts, write narration scripts | Claude Opus |
-| **3. Cut** | Extract segments, concat, loudness normalize, mix music | FFmpeg (stream copy + EBU R128) |
+| **3. Cut** | Extract segments from clean source, concat, loudness normalize, mix music | FFmpeg (stream copy + EBU R128) |
 | **4. Watermark** | Logo overlay + visual effects (zoom, text) | FFmpeg (h264_nvmpi) |
 | **5. Background** | Replace video background via person segmentation (optional) | RVM (ONNX) + FFmpeg |
 | **6. Intro/Outro** | Prepend/append branded templates + voice narration | Chatterbox TTS + FFmpeg |
 | **7. Hook Prepend** | Prepend hook clip to specified cuts | FFmpeg (stream copy) |
-| **8. Thumbnail** | AI concept → image generation → text/branding overlay | Claude + Flux/PuLID + Pillow |
+| **8. Thumbnail** | AI concept → image generation → text/branding overlay (YouTube + Instagram + LinkedIn) | Claude + Flux/PuLID + Pillow |
 
 Each stage checkpoints to `job_state.json`. If anything fails, `videngine resume` picks up where it stopped.
+
+### Audio Processing (Stage 1)
+
+Audio is processed once on the full source file, not per-clip:
+
+1. **Extract** at 48kHz (single extraction for both denoise and transcription)
+2. **Denoise** via DeepFilterNet3 (full file — consistent noise profile)
+3. **Compress** with device-specific profile (macbook or iphone)
+4. **Downsample** to 16kHz → Whisper transcription (on clean audio)
+5. **Create `source_clean.mp4`** — original video + denoised/compressed audio
+
+All subsequent stages cut from the clean source. Only per-clip loudness normalization (EBU R128) remains in the cut stage.
+
+### Background Replacement (Stage 5)
+
+Optional stage using [Robust Video Matting (RVM)](https://github.com/PeterL1n/RobustVideoMatting) for person segmentation. Disabled by default.
+
+**Background types:**
+- `blur` — blurred version of the original background
+- `solid` — solid hex color (e.g. `#1a1a2e`)
+- `image` — custom background image (PNG/JPG)
+
+**Enable in config:**
+```toml
+[background]
+enabled = true
+background_type = "blur"    # "blur", "solid", "image"
+blur_strength = 21
+```
+
+**Or per-run:** `VIDENGINE_BACKGROUND_ENABLED=true`
+
+**Standalone command:** `/replace-background input.mp4 background.png [output.mp4]`
+
+The RVM ONNX model (~14MB) auto-downloads on first use. For faster processing, install `onnxruntime-gpu` (CUDA provider gives ~10-20x speedup over CPU).
+
+### Thumbnail Generation (Stage 8)
+
+Generates platform-specific thumbnails per cut:
+
+| Output | Size | Format | Design |
+|--------|------|--------|--------|
+| `thumbnail_youtube.png` | 1280x720 | PNG | Face + hook text + branding (rule of thirds) |
+| `thumbnail_instagram.jpg` | 1080x1920 | JPEG 95% sRGB | Brand colors + centered text + dimmed frame (center-out for 1:1 grid crop) |
+| `thumbnail_instagram_grid.jpg` | 1080x1080 | JPEG 95% sRGB | Grid preview — what people see on profile |
+| `thumbnail_linkedin.png` | 1200x627 | PNG | Resized from YouTube |
+
+Instagram covers are designed **center-out**: all critical content (text, logo) lives inside the center 1080x1080 square, which is what appears on the profile grid. The gradient background extends to fill 9:16 for the full Reel cover view.
+
+## Brand System
+
+Brand visuals are defined once per brand, separate from editorial cut specs.
+
+### Brand Config
+
+```
+assets/brands/{brand_name}/
+├── brand.json          ← colors, fonts, watermark, templates, thumbnail config
+├── fonts/              ← brand-specific fonts (TTF/OTF)
+└── logos/              ← logo variants (transparent PNG)
+```
+
+Example `brand.json`:
+```json
+{
+  "name": "dbexpertai",
+  "display_name": "DB Expert AI",
+  "colors": {
+    "primary": "#336791",
+    "accent": "#F5A623",
+    "background_dark": "#1a2332"
+  },
+  "fonts": {
+    "heading": "Montserrat-Bold.ttf",
+    "body": "BebasNeue-Regular.ttf"
+  },
+  "thumbnail": {
+    "youtube": { "text_style": "line1_white_line2_red", "use_face": true },
+    "instagram": { "text_style": "centered_bold", "use_face": false, "show_accent_strip": true }
+  },
+  "watermark": { "file": "dbexpertai-watermark.png" },
+  "templates": { "intro_9x16": "dbexpert-intro-9x16.mp4" }
+}
+```
+
+### Input Contract (manifest.json)
+
+When processing a slug, the input directory can include a `manifest.json` that ties the recording to a brand:
+
+```json
+{
+  "brand": "dbexpertai",
+  "slug": "postgres-indexing-tips",
+  "language": "en",
+  "audio_profile": "iphone"
+}
+```
+
+The pipeline loads brand config by name from `assets/brands/`. Manifest overrides (per-job colors, person description) are applied on top.
+
+If no manifest exists, the pipeline reads `source.brand` from the cut spec file.
+
+### Cut Specs
+
+Cut specs define editorial format only — no brand visuals:
+
+```
+config/cut_specs/
+├── landscape-dbexpertai.json    ← 16:9 screen recordings
+├── portrait-dbexpertai.json     ← 9:16 iPhone recordings
+├── landscape-founder.json       ← 16:9 talking head
+├── portrait-founder.json        ← 9:16 talking head
+└── moods.json                   ← mood → music file mappings
+```
+
+Each spec has: `pipeline` name, `source` context (brand, format, aspect ratio, audio profile, tone), and `cuts[]` (editorial formats with duration ranges, mood options, channel targets, and editorial lens).
+
+## Claude Code Commands
+
+| Command | What it does |
+|---------|-------------|
+| `/replace-background` | Replace video background (RVM + FFmpeg composite) |
+| `/pull-input` | Pull recordings from NAS, transcribe, match to scripts, sort |
+| `/push-output` | Push finished videos to NAS for review |
+| `/check-readiness` | Full readiness check for a video slug |
+| `/review-editing-plan` | QA review of a cut plan |
+| `/sync` | Git stash/pull/push to main |
 
 ## Requirements
 
@@ -30,6 +158,12 @@ Each stage checkpoints to `job_state.json`. If anything fails, `videngine resume
 - [whisper.cpp](https://github.com/ggerganov/whisper.cpp) (`whisper-cli`) + `ggml-large-v3-turbo` model
 - ANTHROPIC_API_KEY environment variable
 - NVIDIA GPU recommended (CUDA for whisper.cpp + Chatterbox)
+
+### Additional for background replacement
+
+- `opencv-python-headless>=4.8`
+- `onnxruntime>=1.16` (or `onnxruntime-gpu` for CUDA acceleration)
+- `numpy>=1.24`
 
 ## Setup
 
@@ -73,85 +207,23 @@ uv pip install nvidia-cudss-cu12
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-## Content Production Pipeline
-
-For the David K content pipeline, videngine handles post-production:
-
-```bash
-# Step 0: Pull recordings from NAS, transcribe, auto-sort into slugs
-# Use /pull-input in Claude Code
-
-# Step 1-3: Ingest + audio preprocessing + transcription (mechanical)
-videngine pre-process {slug}
-
-# Step 5-7: Cut beats + re-transcribe + VAD/emotion scoring (mechanical)
-videngine cut-beats {slug}
-
-# Full pipeline with agent (scene matching + readiness report):
-# Use /check-readiness {slug} in Claude Code
-
-# Push finished output to NAS for team review:
-# Use /push-output {slug} in Claude Code
-```
-
-**Directory structure:**
-```
-video-content/
-  input/_inbox/        ← staging area for NAS pulls (transient)
-  input/_unsorted/     ← recordings that couldn't be matched to a script
-  input/{slug}/        ← raw files + script + sidecar (ready for pre-process)
-  production/{slug}/   ← processing workspace (wiped on each run)
-  output/{slug}/       ← finished exports
-```
-
-**`/pull-input`** pulls videos from the Synology NAS (`ssh nas`), transcribes with Whisper, matches transcripts against coached scripts in `~/code/content/`, and sorts files into the correct slug directory. If `pre-process` finds a `.transcript.json` file alongside a video, it skips re-transcription.
-
-See `.claude/commands/pull-input.md` and `.claude/commands/check-readiness.md` for agent-orchestrated pipelines.
-
-## Usage
-
-```bash
-# Full pipeline
-videngine process video.mp4 --project "podcast-ep42"
-
-# Skip voice cloning
-videngine process video.mp4 --no-voice
-
-# Target specific duration and formats
-videngine process video.mp4 --target-duration 120 --ratios 9x16,4x5
-
-# Pause after AI analysis to review edit decisions
-videngine process video.mp4 --review
-
-# Resume a failed/interrupted job
-videngine resume --latest
-videngine resume <job-id>
-
-# List jobs
-videngine jobs
-videngine jobs --status failed
-
-# Cleanup old completed jobs
-videngine cleanup --older-than 7d
-
-# Dry run (show what would happen)
-videngine process video.mp4 --dry-run
-```
-
-## Assets
-
-Drop these into `assets/`:
-
-| Asset | Path | Notes |
-|-------|------|-------|
-| Logo/watermark | `assets/watermarks/logo.png` | Transparent PNG |
-| Intro template | `assets/intros/default-intro.mp4` | 1920x1920 square master, cropped per aspect ratio |
-| Outro template | `assets/outros/default-outro.mp4` | 1920x1920 square master, cropped per aspect ratio |
-| Voice reference | `assets/voice_refs/founder.m4a` | 10-30s of clear speech for voice cloning |
-
 ## Configuration
 
-All settings in `config/default.toml`. Override with env vars prefixed `VIDENGINE_` (e.g. `VIDENGINE_AI_MODEL=claude-sonnet-4-20250514`).
+All settings in `config/default.toml`. Override with env vars prefixed `VIDENGINE_` (e.g. `VIDENGINE_BACKGROUND_ENABLED=true`).
+
+Key config sections:
+
+| Section | What it controls |
+|---------|-----------------|
+| `[paths]` | Working directory for jobs |
+| `[whisper]` | Model path, language, threads |
+| `[ai]` | Claude model, max tokens, temperature |
+| `[voice]` | TTS engine, reference audio |
+| `[video]` | Intro/outro templates, watermark, music, loudness targets |
+| `[audio]` | Denoise toggle, device profiles (macbook/iphone) |
+| `[background]` | Background replacement (disabled by default) |
+| `[encoding]` | Video codec (h264_nvmpi on Jetson, libx264 fallback) |
+| `[thumbnail]` | ComfyUI/Flux URLs, fallback mode |
 
 ## Target Platform
 
