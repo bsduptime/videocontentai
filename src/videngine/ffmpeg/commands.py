@@ -332,20 +332,21 @@ def composite_with_matte(
             "[0:v][matte]alphamerge[fg];"
             "[bg][fg]overlay=0:0:shortest=1[out]"
         )
+        bg_input = ["-i", bg_source]
     else:
-        # Video background (blur, etc.)
+        # Video background (blur, etc.) — loop to match foreground duration
         filter_complex = (
             "[2:v]format=gray[matte];"
             "[0:v][matte]alphamerge[fg];"
             "[1:v][fg]overlay=0:0:shortest=1[out]"
         )
+        bg_input = ["-stream_loop", "-1", "-i", bg_source]
     return [
         "ffmpeg",
         "-y",
         "-i",
         input_path,  # 0: original (foreground + audio)
-        "-i",
-        bg_source,  # 1: background (image or video)
+        *bg_input,  # 1: background (image or video, looped if needed)
         "-i",
         matte_path,  # 2: alpha matte
         "-filter_complex",
