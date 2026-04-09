@@ -15,7 +15,7 @@ Source Video → Clean Source (denoise+compress) → Transcribe → AI Analysis
 |-------|-------------|------|
 | **1. Transcribe** | Extract audio (48kHz), denoise, compress, transcribe, create clean source | DeepFilterNet3 + whisper.cpp (CUDA) |
 | **2. Analyze** | Score segments, plan cuts, write narration scripts | Claude Opus |
-| **3. Cut** | Extract segments from clean source, concat, loudness normalize, mix music | FFmpeg (stream copy + EBU R128) |
+| **3. Cut** | Extract segments from clean source, crossfade concat, loudness normalize, mix music | FFmpeg (xfade + EBU R128) |
 | **4. Watermark** | Logo overlay + visual effects (zoom, text) | FFmpeg (h264_nvmpi) |
 | **5. Background** | Replace video background via person segmentation (optional) | RVM (ONNX) + FFmpeg |
 | **6. Intro/Outro** | Prepend/append branded templates + voice narration | Chatterbox TTS + FFmpeg |

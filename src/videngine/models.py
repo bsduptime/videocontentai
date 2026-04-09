@@ -109,6 +109,7 @@ class CutSpec(BaseModel):
         default_factory=list
     )  # mood names from moods.json — agent picks one
     audio_profile: str = "macbook"  # audio preprocessing profile ("macbook", "iphone")
+    crossfade_duration: float | None = None  # override config default; None = use default
 
 
 class Mood(BaseModel):

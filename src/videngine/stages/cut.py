@@ -12,6 +12,7 @@ from pathlib import Path
 from ..config import Config
 from ..ffmpeg.commands import (
     concat_segments,
+    crossfade_segments,
     cut_segment,
     loudnorm_apply,
     loudnorm_measure,
@@ -67,27 +68,58 @@ def run_cut(
             _run_ffmpeg(cmd)
             segment_paths.append(str(out_path))
 
-        # Step 2: Concat segments (stream copy — fast)
-        concat_path = clip_dir / "concat.mp4"
-        concat_list_path = clip_dir / "concat_list.txt"
-        concat_content, concat_cmd = concat_segments(
-            segment_paths,
-            str(concat_path),
-            str(concat_list_path),
+        # Resolve crossfade duration: per-spec override > config default
+        spec = specs_by_name.get(plan.spec_name)
+        xfade_dur = (
+            spec.crossfade_duration
+            if spec and spec.crossfade_duration is not None
+            else config.video.crossfade_duration
         )
-        concat_list_path.write_text(concat_content)
-        _run_ffmpeg(concat_cmd)
 
-        # Step 3: Scale to 1080p only if needed (re-encodes)
-        if needs_scale:
-            scaled_path = clip_dir / "scaled.mp4"
-            scale_cmd = scale_to_1080p(
-                str(concat_path), str(scaled_path), config.encoding, is_landscape
+        # Step 2: Concat segments — with crossfade or hard cut
+        concat_path = clip_dir / "concat.mp4"
+        if xfade_dur > 0 and len(segment_paths) >= 2:
+            # Probe each segment for its duration
+            seg_durations = [probe(p).duration for p in segment_paths]
+            scale_h = 1080 if needs_scale else None
+            xfade_cmd = crossfade_segments(
+                segment_paths,
+                seg_durations,
+                str(concat_path),
+                config.encoding,
+                crossfade_duration=xfade_dur,
+                scale_h=scale_h,
+                is_landscape=is_landscape,
             )
-            _run_ffmpeg(scale_cmd)
-            pre_norm_path = scaled_path
-        else:
+            _run_ffmpeg(xfade_cmd)
+            logger.info(
+                "%-20s crossfade: %.1fs between %d segments",
+                plan.spec_name,
+                xfade_dur,
+                len(segment_paths),
+            )
             pre_norm_path = concat_path
+        else:
+            # Hard cut fallback (stream copy — fast)
+            concat_list_path = clip_dir / "concat_list.txt"
+            concat_content, concat_cmd = concat_segments(
+                segment_paths,
+                str(concat_path),
+                str(concat_list_path),
+            )
+            concat_list_path.write_text(concat_content)
+            _run_ffmpeg(concat_cmd)
+
+            # Scale to 1080p only if needed (re-encodes)
+            if needs_scale:
+                scaled_path = clip_dir / "scaled.mp4"
+                scale_cmd = scale_to_1080p(
+                    str(concat_path), str(scaled_path), config.encoding, is_landscape
+                )
+                _run_ffmpeg(scale_cmd)
+                pre_norm_path = scaled_path
+            else:
+                pre_norm_path = concat_path
 
         # Audio is already denoised + compressed in stage 1 (source_clean.mp4).
         # Only per-clip loudness normalization remains here.

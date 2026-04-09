@@ -55,6 +55,7 @@ class VideoConfig:
     loudnorm_target_lufs: float = -16.0  # EBU R128 target
     loudnorm_true_peak: float = -1.5  # dBTP ceiling
     loudnorm_lra: float = 11.0  # loudness range
+    crossfade_duration: float = 0.3  # seconds, 0 to disable
 
 
 @dataclass

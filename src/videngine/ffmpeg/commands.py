@@ -89,6 +89,89 @@ def concat_segments(
     return concat_content, cmd
 
 
+def crossfade_segments(
+    segment_paths: list[str],
+    segment_durations: list[float],
+    output_path: str,
+    encoding: EncodingConfig,
+    crossfade_duration: float = 0.3,
+    transition: str = "fade",
+    scale_h: int | None = None,
+    is_landscape: bool = True,
+) -> list[str]:
+    """Concatenate segments with crossfade transitions via xfade/acrossfade.
+
+    Requires re-encoding.  When *scale_h* is given the output is also scaled
+    to that height (1080) in the same encode pass so we don't pay twice.
+    """
+    n = len(segment_paths)
+    if n < 2:
+        raise ValueError("crossfade_segments requires at least 2 segments")
+
+    # --- inputs ---
+    inputs: list[str] = []
+    for p in segment_paths:
+        inputs += ["-i", p]
+
+    # --- filter graph ---
+    filters: list[str] = []
+
+    # Normalize timebase and fps for each input
+    for i in range(n):
+        filters.append(f"[{i}:v]settb=AVTB,fps=30[v{i}]")
+
+    # Chain xfade filters
+    offset = segment_durations[0] - crossfade_duration
+    for i in range(1, n):
+        vin_a = f"[v{i - 1}]" if i == 1 else f"[xf{i - 1}]"
+        vin_b = f"[v{i}]"
+        out_label = "[vout]" if i == n - 1 else f"[xf{i}]"
+        filters.append(
+            f"{vin_a}{vin_b}xfade=transition={transition}"
+            f":duration={crossfade_duration}:offset={offset:.4f}{out_label}"
+        )
+        if i < n - 1:
+            offset += segment_durations[i] - crossfade_duration
+
+    # Optional scaling on the final video stream
+    if scale_h:
+        if is_landscape:
+            scale_expr = f"scale=-2:{scale_h}"
+        else:
+            scale_expr = f"scale={scale_h}:-2"
+        filters.append(f"[vout]{scale_expr}[vscaled]")
+        final_video = "[vscaled]"
+    else:
+        final_video = "[vout]"
+
+    # Chain acrossfade filters for audio
+    for i in range(1, n):
+        ain_a = f"[{i - 1}:a]" if i == 1 else f"[af{i - 1}]"
+        ain_b = f"[{i}:a]"
+        out_label = "[aout]" if i == n - 1 else f"[af{i}]"
+        filters.append(f"{ain_a}{ain_b}acrossfade=d={crossfade_duration}{out_label}")
+
+    final_audio = "[aout]"
+
+    filter_complex = ";".join(filters)
+
+    cmd = [
+        "ffmpeg",
+        "-y",
+        *inputs,
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        final_video,
+        "-map",
+        final_audio,
+        *_video_encode_args(encoding),
+        *_audio_encode_args(encoding),
+        output_path,
+    ]
+    return cmd
+
+
 def scale_to_1080p(
     input_path: str,
     output_path: str,

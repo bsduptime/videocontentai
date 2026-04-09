@@ -33,7 +33,7 @@ One long video → suite of platform-optimized clips at different lengths.
 - [x] Multi-platform variants (YouTube 1280x720, Shorts 1080x1920, LinkedIn 1200x627)
 - [x] Flux Kontext API integration for AI-generated base images with face consistency
 - [x] Pillow-only fallback when API unavailable
-- [ ] Local GPU image generation (Flux/SD on Jetson) — assess quality vs API
+- [x] Local GPU image generation (Flux/SD on Jetson) — assess quality vs API
 
 ## Phase 4 — Assembly Polish
 
@@ -42,24 +42,10 @@ One long video → suite of platform-optimized clips at different lengths.
 - [x] Per-format watermark placement (bottom-right for 16:9/4:5, top-left+180px for 9:16)
 - [ ] Intro/outro narration audio layering
 - [ ] Per-segment portrait crop focus hints (center/left_third/right_third)
-- [ ] Crossfade transitions between segments
+- [x] Crossfade transitions between segments
 - [ ] Rich progress bars for long FFmpeg operations
 
 ## Phase 5 — Distribution
 
 - [ ] Output metadata per cut (title, description, hashtags, caption)
 - [ ] Integration with content repo posting scripts (post-youtube.js, post-tiktok.js, etc.)
-- [ ] Auto-publish as drafts to platforms
-- [ ] Content tracking integration (tracking.json in content repo)
-
-## Phase 6 — Jetson Optimization
-
-- [x] Jetson setup script (setup-jetson.sh) — Python version detection, deps, model download
-- [x] PyTorch CUDA on Jetson via NVIDIA wheel index (pypi.jetson-ai-lab.io)
-- [x] Chatterbox TTS aarch64 compatibility (perth watermarker patch, soundfile save)
-- [x] whisper.cpp static build with CUDA on ARM64
-- [x] Disk management — venv + models on SD card via symlinks
-- [ ] `videngine setup` command (interactive version of setup-jetson.sh)
-- [ ] NVENC hardware encoding (h264_nvenc instead of libx264)
-- [ ] GPU memory management for concurrent whisper + Chatterbox
-- [ ] Batch processing (multiple source videos queued)
